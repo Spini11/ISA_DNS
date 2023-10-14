@@ -6,6 +6,12 @@ arguments_struct argPars(int argc, char *argv[])
     bool revExists = false;
     bool AAAAExists = false;
     arguments_struct arguments;
+    arguments.recursive = false;
+    arguments.reverse = false;
+    arguments.AAAA = false;
+    arguments.dns[0] = '\0';
+    arguments.dnsport = 0;
+    arguments.domain[0] = '\0';
     if(argc < 4)
     {
         std::cout << "Usage: " << argv[0] << " [-r] [-x] [-6] -s dnsserver [-p dnsport] domain" << std::endl;
@@ -45,13 +51,13 @@ arguments_struct argPars(int argc, char *argv[])
         }
         else if(strcmp(argv[i], "-s") == 0)
         {
-            if(arguments.dnsip[0] != '\0')
+            if(arguments.dns[0] != '\0')
             {
+                std::cout << arguments.dns << std::endl;
                 std::cout << "Error: -s already exists" << std::endl;
                 exit(1);
             }
-            //NOTE: need to check if ip or hostname
-            strncpy(arguments.dnsip, argv[++i], 39);
+            strncpy(arguments.dns, argv[++i], 255);
         }
         else if(strcmp(argv[i], "-p") == 0)
         {
@@ -69,6 +75,11 @@ arguments_struct argPars(int argc, char *argv[])
                 std::cout << "Error: -p argument is not a number" << std::endl;
                 exit(1);
             }
+        }
+        else if(argv[i][0] == '-')
+        {
+            std::cout << "Error: unknown argument" << std::endl;
+            exit(1);
         }
         else
         {

@@ -5,7 +5,7 @@ typedef struct {
     bool recursive;
     bool reverse;
     bool AAAA;
-    char dnsip[39];
+    char dns[255];
     int dnsport;
     char domain[255];
 } arguments_struct;
