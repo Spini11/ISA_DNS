@@ -52,4 +52,22 @@ typedef struct additional_struct
     additional_struct *next;
 } additional_struct;
 
+
+struct DNSHeader {
+    uint16_t id;
+    uint16_t flags;
+    uint16_t qdcount;
+    uint16_t ancount;
+    uint16_t nscount;
+    uint16_t arcount;
+};
+
+enum Flags_ : uint16_t {
+    Default = 0x0000,
+    RD = 0x0100,
+    inverse = 0x0800,
+    rdinverse = 0x0900
+};
+
+
 response_struct dnsquery(arguments_struct arguments);
