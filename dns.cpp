@@ -37,6 +37,19 @@ response_struct dnsquery(arguments_struct arguments)
         std::cerr << "Error sending data" << std::endl;
         exit(1);
     }
+
+    
+    std::vector<uint8_t> response(512);
+    ssize_t receivedBytes = recvfrom(udpSocket, response.data(), response.size(), 0, NULL, NULL);
+    if (receivedBytes == -1) {
+        
+        std::cerr << "Error receiving data" << std::endl;
+        exit(1);
+    }
+    //print response
+    for (int i = 0; i < receivedBytes; i++) {
+        std::cout << std::hex << (int)response[i] << " ";
+    }
     //DEBUG
     close(udpSocket);
     return response_struct();
