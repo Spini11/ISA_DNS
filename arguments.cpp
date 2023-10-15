@@ -12,6 +12,7 @@ arguments_struct argPars(int argc, char *argv[])
     arguments.dns[0] = '\0';
     arguments.dnsport = 0;
     arguments.domain[0] = '\0';
+
     if(argc < 4)
     {
         std::cout << "Usage: " << argv[0] << " [-r] [-x] [-6] -s dnsserver [-p dnsport] domain" << std::endl;
@@ -91,5 +92,8 @@ arguments_struct argPars(int argc, char *argv[])
             strncpy(arguments.domain, argv[i], 255);
         } 
     }
+    if (arguments.dnsport == NULL)
+        arguments.dnsport = 53;
+    
     return arguments;
 }

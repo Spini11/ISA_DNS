@@ -4,6 +4,27 @@
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
+        {
+            "type": "cppdbg",
+            "request": "launch",
+            "name": "Launch Program",
+            "program": "${fileDirname}/dns",
+            "args": ["-s", "123", "-p", "2023", "spini.eu"],
+            "stopAtEntry": false,
+      "cwd": "${workspaceFolder}",
+      "environment": [],
+      "externalConsole": false,
+      "MIMode": "gdb",
+      "miDebuggerPath": "/usr/bin/gdb",
+      "setupCommands": [
+        {
+          "description": "Enable pretty-printing for gdb",
+          "text": "-enable-pretty-printing",
+          "ignoreFailures": true
+        }
+      ],
+
+        }
         
 
     ]
