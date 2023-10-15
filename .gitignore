@@ -27,7 +27,8 @@
 
 ./build
 
-dns
+./dns
 
-cmake_install.cmake
-
+./cmake_install.cmake
+./CMakeFiles
+./CMakeCache.txt
