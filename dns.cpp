@@ -1,7 +1,7 @@
 #include "dns.h"
 #include <vector>
 #include <unistd.h>
-#include <regex>
+
 
 std::vector<uint8_t> createDNSQuery(bool recursive, bool reverse, bool AAAA, char domain[255]);
 uint16_t generateID();
@@ -14,23 +14,16 @@ response_struct dnsquery(arguments_struct arguments)
     std::vector<uint8_t> query = createDNSQuery(arguments.recursive, arguments.reverse, arguments.AAAA, arguments.domain);
     ssize_t receivedBytes = 0;
 
-    std::regex ipv4("(([0-9]|[1-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-5])");
-    std::regex ipv6("(([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:)|fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))");
     std::vector<uint8_t> response;
+    
     if(regex_match(arguments.dns, ipv4))
-    {
-        std::cout << "ipv4" << std::endl;
         response = sendQueryIP4(query, arguments.dns, arguments.dnsport, receivedBytes);
-    }
+
     else if(regex_match(arguments.dns, ipv6))
-    {
-        std::cout << "ipv6" << std::endl;
         response = sendQueryIP6(query, arguments.dns, arguments.dnsport, receivedBytes);
-    }
     else
     {
-        std::cout << "domain" << std::endl;
-        //response = sendQuery(query, arguments.dns, arguments.dnsport, receivedBytes);
+        //TODO
         exit(1);
     }
     if(response[0] != query[0] || response[1] != query[1])
@@ -122,7 +115,8 @@ std::vector<uint8_t> createDNSQuery(bool recursive, bool reverse, bool AAAA, cha
     else if(recursive)
         header.flags = htons(RD);
     else if(reverse)
-        header.flags = htons(inverse);
+        header.flags = htons(Default);
+        //header.flags = htons(inverse);
     else
         header.flags = htons(Default);
 
@@ -137,6 +131,8 @@ std::vector<uint8_t> createDNSQuery(bool recursive, bool reverse, bool AAAA, cha
     dnsQuery.insert(dnsQuery.end(), 0x00);
     if(AAAA)
         dnsQuery.insert(dnsQuery.end(), 0x1c);
+    else if(reverse)
+        dnsQuery.insert(dnsQuery.end(), 0x0c);
     else
         dnsQuery.insert(dnsQuery.end(), 0x01);
     dnsQuery.insert(dnsQuery.end(), 0x00);
