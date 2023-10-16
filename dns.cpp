@@ -8,6 +8,7 @@ uint16_t generateID();
 void qname(char domain[255], std::vector<uint8_t> &dnsQuery);
 std::vector<uint8_t> sendQueryIP4(std::vector<uint8_t> dnsQuery, char dns[255], int dnsport, ssize_t &receivedBytes);
 std::vector<uint8_t> sendQueryIP6(std::vector<uint8_t> dnsQuery, char dns[255], int dnsport, ssize_t &receivedBytes);
+response_struct responseParse(std::vector<uint8_t> response);
 
 response_struct dnsquery(arguments_struct arguments)
 {
@@ -27,16 +28,56 @@ response_struct dnsquery(arguments_struct arguments)
         exit(1);
     }
     if(response[0] != query[0] || response[1] != query[1])
-    {
-        std::cout << "Error: ID mismatch" << std::endl;
-        exit(1);
-    }
+        errorHan(1); // ID mismatch
+    response_struct response_struct = responseParse(response);
     //DEBUG
     for (int i = 0; i < receivedBytes; i++) {
         std::cout << std::hex << (int)response[i] << " ";
     }
     //DEBUG
-    return response_struct();
+    return response_struct;
+}
+
+response_struct responseParse(std::vector<uint8_t> response)
+{
+    //DEBUG
+    for(int i = 0; i < 8; i++)
+    {
+        std::cout << ((int)response[13] & (1 << i)) << " ";
+    }
+    std::cout << std::endl;
+    //DEBUG
+    if(!((int)response[2] & (1 << 7)))
+        errorHan(2); // Not a response
+    for(int i = 3; i < 7; i++)
+    {
+        if(response[2] & (1 << i))
+            errorHan(3); //Invalid opcode
+    }
+    if((int)response[2] & (1 << 1))
+        errorHan(4); //Truncated
+    if((int)response[3] & (1 << 6))
+        errorHan(5); // Z flag is set to 1
+    int rcode = (int)response[3] & 0b00001111;
+    if(rcode == 1)
+        errorHan(6); // Format error
+    if(rcode == 2)
+        errorHan(7); // Server failure
+    if(rcode == 3 && ((int)response[2] & (1 << 2)))
+        errorHan(8); // Name error
+    if(rcode == 4)
+        errorHan(9); // Not implemented
+    if(rcode == 5)
+        errorHan(10); // Refused
+    if(rcode >= 6)
+        errorHan(11); // Unknown error
+
+    response_struct response_str;
+    response_str.answercount = ((int)response[7] & 0b0000000011111111) + ((int)response[6] & 0b1111111100000000);
+    response_str.authoritycount = ((int)response[9] & 0b0000000011111111) + ((int)response[8] & 0b1111111100000000);
+    response_str.additionalcount = ((int)response[11] & 0b0000000011111111) + ((int)response[10] & 0b1111111100000000);
+    
+    return response_str;
 }
 
 std::vector<uint8_t> sendQueryIP4(std::vector<uint8_t> dnsQuery, char dns[255], int dnsport, ssize_t &receivedBytes)

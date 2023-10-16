@@ -92,7 +92,7 @@ arguments_struct argPars(int argc, char *argv[])
             strncpy(arguments.domain, argv[i], 255);
         } 
     }
-    if (arguments.dnsport == 0)
+    if (arguments.dnsport == NULL)
         arguments.dnsport = 53;
     
     return arguments;

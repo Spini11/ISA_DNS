@@ -11,10 +11,12 @@ add_executable(
     ./dns.h
     ./arguments.cpp
     ./arguments.h
+    ./errorHandling.cpp
+    ./errorHandling.h
 )
 set_target_properties(
     dns
     PROPERTIES
-    CXX_STANDARD 11
+    CXX_STANDARD 20
 )
 target_compile_options(dns PRIVATE "-Wall" "-Wextra" "-pedantic")

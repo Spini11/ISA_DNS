@@ -1,4 +1,5 @@
 #include "arguments.h"
+#include "errorHandling.h"
 #include <sys/socket.h>
 #include <netdb.h>
 #include <arpa/inet.h>

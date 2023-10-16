@@ -1,0 +1,1 @@
+void errorHan(int n);
