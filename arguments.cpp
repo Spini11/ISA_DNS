@@ -58,7 +58,17 @@ arguments_struct argPars(int argc, char *argv[])
                 std::cout << "Error: -s already exists" << std::endl;
                 exit(1);
             }
-            strncpy(arguments.dns, argv[++i], 255);
+            else if(i == argc-1)
+            {
+                std::cout << "Error: argument -p requires a port number" << std::endl;
+                exit(1);
+            }
+            else if(argv[++i][0] == '-')
+            {
+                std::cout << "Error: missing dns address" << std::endl;
+                exit(1);
+            }
+            strncpy(arguments.dns, argv[i], 255);
         }
         else if(strcmp(argv[i], "-p") == 0)
         {
@@ -67,7 +77,12 @@ arguments_struct argPars(int argc, char *argv[])
                 std::cout << "Error: -p already exists" << std::endl;
                 exit(1);
             }
-            else if(std::isdigit(*argv[++i]))
+            else if(i == argc-1)
+            {
+                std::cout << "Error: argument -p requires a port number" << std::endl;
+                exit(1);
+            }
+            else if( std::isdigit(*argv[++i]))
             {
                 arguments.dnsport = atoi(argv[i]);
             }
@@ -94,6 +109,10 @@ arguments_struct argPars(int argc, char *argv[])
     }
     if (arguments.dnsport == NULL)
         arguments.dnsport = 53;
-    
+    if (arguments.dns[0] == '\0' || arguments.domain[0] == '\0')
+    {
+        std::cout << "Error: missing argument" << std::endl;
+        exit(1);
+    }
     return arguments;
 }

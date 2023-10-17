@@ -1,3 +1,0 @@
-/mnt/e/OneDrive/VUT/5.semestr/ISA/projekt DNS/CMakeFiles/dns.dir
-/mnt/e/OneDrive/VUT/5.semestr/ISA/projekt DNS/CMakeFiles/edit_cache.dir
-/mnt/e/OneDrive/VUT/5.semestr/ISA/projekt DNS/CMakeFiles/rebuild_cache.dir

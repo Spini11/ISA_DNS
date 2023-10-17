@@ -8,7 +8,7 @@ uint16_t generateID();
 void qname(char domain[255], std::vector<uint8_t> &dnsQuery);
 std::vector<uint8_t> sendQueryIP4(std::vector<uint8_t> dnsQuery, char dns[255], int dnsport, ssize_t &receivedBytes);
 std::vector<uint8_t> sendQueryIP6(std::vector<uint8_t> dnsQuery, char dns[255], int dnsport, ssize_t &receivedBytes);
-response_struct responseParse(std::vector<uint8_t> response);
+response_struct responseParse(std::vector<uint8_t> response, ssize_t receivedBytes);
 
 response_struct dnsquery(arguments_struct arguments)
 {
@@ -25,28 +25,24 @@ response_struct dnsquery(arguments_struct arguments)
     else
     {
         //TODO
+        std::cout << "domain received, exiting" << std::endl;
         exit(1);
     }
     if(response[0] != query[0] || response[1] != query[1])
         errorHan(1); // ID mismatch
-    response_struct response_struct = responseParse(response);
+    response_struct response_struct = responseParse(response, receivedBytes);
+
     //DEBUG
     for (int i = 0; i < receivedBytes; i++) {
         std::cout << std::hex << (int)response[i] << " ";
     }
+    std::cout << std::endl;
     //DEBUG
     return response_struct;
 }
 
-response_struct responseParse(std::vector<uint8_t> response)
+response_struct responseParse(std::vector<uint8_t> response, ssize_t receivedBytes)
 {
-    //DEBUG
-    for(int i = 0; i < 8; i++)
-    {
-        std::cout << ((int)response[13] & (1 << i)) << " ";
-    }
-    std::cout << std::endl;
-    //DEBUG
     if(!((int)response[2] & (1 << 7)))
         errorHan(2); // Not a response
     for(int i = 3; i < 7; i++)
@@ -77,6 +73,15 @@ response_struct responseParse(std::vector<uint8_t> response)
     response_str.authoritycount = ((int)response[9] & 0b0000000011111111) + ((int)response[8] & 0b1111111100000000);
     response_str.additionalcount = ((int)response[11] & 0b0000000011111111) + ((int)response[10] & 0b1111111100000000);
     
+    //skip query
+    int bytePos = 12;
+    while((int)response[bytePos] != 0x00)
+        bytePos++;
+    bytePos += 5;
+    
+    //answer
+    
+
     return response_str;
 }
 
@@ -142,7 +147,27 @@ std::vector<uint8_t> sendQueryIP6(std::vector<uint8_t> dnsQuery, char dns[255], 
         close(udpSocket);
         exit(1);
     }
-    return std::vector<uint8_t>(); //TODO: received dat
+    
+
+    struct timeval timeout;
+    timeout.tv_sec = 2;
+    timeout.tv_usec = 0;
+    
+    if (setsockopt (udpSocket, SOL_SOCKET, SO_RCVTIMEO, (char *)&timeout, sizeof(timeout)) < 0)
+    {
+        std::cout << "setsockopt failed\n";
+        exit(1);
+    }
+    
+    std::vector<uint8_t> response(512);
+    receivedBytes = recvfrom(udpSocket, response.data(), response.size(), 0, NULL, NULL);
+    if (receivedBytes == -1) {
+        std::cerr << "Error receiving data" << std::endl;
+        close(udpSocket);
+        exit(1);
+    }
+    close(udpSocket);
+    return response;
 }
 
 std::vector<uint8_t> createDNSQuery(bool recursive, bool reverse, bool AAAA, char domain[255])
