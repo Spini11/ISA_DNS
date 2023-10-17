@@ -32,13 +32,6 @@ response_struct dnsquery(arguments_struct arguments)
     if(response[0] != query[0] || response[1] != query[1])
         errorHan(1); // ID mismatch
     response_struct response_struct = responseParse(response, receivedBytes);
-
-    //DEBUG
-    for (int i = 0; i < receivedBytes; i++) {
-        std::cout << std::hex << (int)response[i] << " ";
-    }
-    std::cout << std::endl;
-    //DEBUG
     return response_struct;
 }
 
@@ -93,15 +86,51 @@ response_struct responseParse(std::vector<uint8_t> response, ssize_t receivedByt
         if(answer.type == 1)
         {
             bytePos+=2;
-            //rewrite?
-            answer.rdata[0] = std::to_string((int)response[bytePos++]).c_str()[0];
-            answer.rdata[1] = '.';
-            answer.rdata[2] = std::to_string((int)response[bytePos++]).c_str()[0];
-            answer.rdata[3] = '.';
-            answer.rdata[4] = std::to_string((int)response[bytePos++]).c_str()[0];
-            answer.rdata[5] = '.';
-            answer.rdata[6] = std::to_string((int)response[bytePos++]).c_str()[0];
-            answer.rdata[7] = '\0';
+            //NOTE: rewrite?
+            answer.rdata += std::to_string((int)response[bytePos++]).c_str();
+            answer.rdata += '.';
+            answer.rdata += std::to_string((int)response[bytePos++]).c_str();
+            answer.rdata += '.';
+            answer.rdata += std::to_string((int)response[bytePos++]).c_str();
+            answer.rdata += '.';
+            answer.rdata += std::to_string((int)response[bytePos++]).c_str()[0];
+            answer.rdata += '\0';
+        }
+        //cname
+        else if(answer.type == 5 || answer.type == 12)
+        {
+            bytePos+=2;
+            answer.rdata = domainParser(response, bytePos).c_str();
+            bytePos++;
+        }
+        //AAAA
+        else if(answer.type == 28)
+        {
+            bytePos+=2;
+            for(int i = 0; i < 8; i++)
+            {
+                
+                std::stringstream stream;
+                for(int j = 0; j < 2; j++)
+                {
+                    stream.clear();
+                    if((int)response[bytePos] == 0)
+                    {
+                        stream << std::hex << (int)response[bytePos];
+                        stream << std::hex << (int)response[bytePos++];
+                    }
+                    else
+                    {
+                        if((int)response[bytePos] < 16)
+                            stream << std::hex << 0;
+                        stream << std::hex << (int)response[bytePos++];
+                    }
+                }
+                answer.rdata += stream.str();
+                if(i != 7)
+                    answer.rdata += ':';
+            }
+            answer.rdata += '\0';
         }
         response_str.answer.push_back(answer);
     }
@@ -109,11 +138,14 @@ response_struct responseParse(std::vector<uint8_t> response, ssize_t receivedByt
     //print response_str
     for(int i = 0; i < response_str.answercount; i++)
     {
+        std::cout << std::endl;
+        std::cout << "Answer " << i+1 << "/" << response_str.answercount << ":" << std::endl;
         std::cout << "Name: " << std::dec << response_str.answer[i].name << std::endl;
         std::cout << "Type: " << std::dec << response_str.answer[i].type << std::endl;
         std::cout << "Class: " << std::dec << response_str.answer[i].class_ << std::endl;
         std::cout << "TTL: " << std::dec << response_str.answer[i].ttl << std::endl;
         std::cout << "Rdata: " << response_str.answer[i].rdata << std::endl;
+        std::cout << std::endl;
     }
 
     return response_str;
@@ -128,7 +160,7 @@ std::string domainParser(std::vector<uint8_t> response, int &bytePos)
         {
             bytePos++;
             int offset = (int)response[bytePos];
-            domain += domainParser(response, offset); //check if -1 or not
+            domain += domainParser(response, offset);
             return domain;
         }
         else
@@ -266,12 +298,6 @@ std::vector<uint8_t> createDNSQuery(bool recursive, bool reverse, bool AAAA, cha
     dnsQuery.insert(dnsQuery.end(), 0x00);
     dnsQuery.insert(dnsQuery.end(), 0x01);
 
-    //DEBUG
-    for (int i = 0; i < dnsQuery.size(); i++) {
-        std::cout << std::hex << (int)dnsQuery[i] << " ";
-    }
-    std::cout << std::endl;
-    //DEBUG
     return dnsQuery;
 }
 

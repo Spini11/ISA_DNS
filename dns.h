@@ -11,7 +11,7 @@ typedef struct answer_struct
     int type;
     int class_;
     int ttl;
-    char rdata[255];
+    std::string rdata;
     answer_struct *next;
 } answer_struct;
 
