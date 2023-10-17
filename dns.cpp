@@ -9,6 +9,7 @@ void qname(char domain[255], std::vector<uint8_t> &dnsQuery);
 std::vector<uint8_t> sendQueryIP4(std::vector<uint8_t> dnsQuery, char dns[255], int dnsport, ssize_t &receivedBytes);
 std::vector<uint8_t> sendQueryIP6(std::vector<uint8_t> dnsQuery, char dns[255], int dnsport, ssize_t &receivedBytes);
 response_struct responseParse(std::vector<uint8_t> response, ssize_t receivedBytes);
+std::string domainParser(std::vector<uint8_t> response, int &bytePos);
 
 response_struct dnsquery(arguments_struct arguments)
 {
@@ -80,9 +81,70 @@ response_struct responseParse(std::vector<uint8_t> response, ssize_t receivedByt
     bytePos += 5;
     
     //answer
-    
+    for(int i = 0; i < response_str.answercount; i++)
+    {
+        answer_struct answer;
+        strncpy(answer.name, domainParser(response, bytePos).c_str(), 255);
+        bytePos++;
+        answer.type = ((int)response[bytePos++] << 7) + (int)response[bytePos++];
+        answer.class_ = ((int)response[bytePos++] << 7) + (int)response[bytePos++];
+        answer.ttl = ((int)response[bytePos++] << 24) + ((int)response[bytePos++] << 16) + ((int)response[bytePos++] << 8) + (int)response[bytePos++];
+        //if A type
+        if(answer.type == 1)
+        {
+            bytePos+=2;
+            //rewrite?
+            answer.rdata[0] = std::to_string((int)response[bytePos++]).c_str()[0];
+            answer.rdata[1] = '.';
+            answer.rdata[2] = std::to_string((int)response[bytePos++]).c_str()[0];
+            answer.rdata[3] = '.';
+            answer.rdata[4] = std::to_string((int)response[bytePos++]).c_str()[0];
+            answer.rdata[5] = '.';
+            answer.rdata[6] = std::to_string((int)response[bytePos++]).c_str()[0];
+            answer.rdata[7] = '\0';
+        }
+        response_str.answer.push_back(answer);
+    }
+
+    //print response_str
+    for(int i = 0; i < response_str.answercount; i++)
+    {
+        std::cout << "Name: " << std::dec << response_str.answer[i].name << std::endl;
+        std::cout << "Type: " << std::dec << response_str.answer[i].type << std::endl;
+        std::cout << "Class: " << std::dec << response_str.answer[i].class_ << std::endl;
+        std::cout << "TTL: " << std::dec << response_str.answer[i].ttl << std::endl;
+        std::cout << "Rdata: " << response_str.answer[i].rdata << std::endl;
+    }
 
     return response_str;
+}
+
+std::string domainParser(std::vector<uint8_t> response, int &bytePos)
+{
+    std::string domain;
+    while((int)response[bytePos] != 0x00)
+    {
+        if((int)response[bytePos] == 0xc0)
+        {
+            bytePos++;
+            int offset = (int)response[bytePos];
+            domain += domainParser(response, offset); //check if -1 or not
+            return domain;
+        }
+        else
+        {
+            int length = (int)response[bytePos];
+            bytePos++;
+            for(int i = 0; i < length; i++)
+            {
+                domain += response[bytePos];
+                bytePos++;
+            }
+            if ((int)response[bytePos] != 0x00)
+                domain += '.';
+        }
+    }
+    return domain;
 }
 
 std::vector<uint8_t> sendQueryIP4(std::vector<uint8_t> dnsQuery, char dns[255], int dnsport, ssize_t &receivedBytes)

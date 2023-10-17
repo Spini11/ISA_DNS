@@ -5,25 +5,6 @@
 #include <arpa/inet.h>
 #include <regex>
 
-typedef struct response_struct
-{
-    bool authoritative;
-    bool recursive;
-    bool truncated;
-    int questioncount;
-
-    int answercount;
-    int authoritycount;
-    int additionalcount;
-} response_struct;
-
-typedef struct question_struct
-{
-    char qname[255];
-    int qtype;
-    int qclass;
-} question_struct;
-
 typedef struct answer_struct
 {
     char name[255];
@@ -53,6 +34,25 @@ typedef struct additional_struct
     char rdata[255];
     additional_struct *next;
 } additional_struct;
+
+
+typedef struct response_struct
+{
+    bool authoritative;
+    bool recursive;
+    bool truncated;
+    int questioncount;
+
+    int answercount;
+    int authoritycount;
+    int additionalcount;
+
+    std::vector<answer_struct> answer;
+    std::vector<authority_struct> authority;
+    std::vector<additional_struct> additional;
+} response_struct;
+
+
 
 
 struct DNSHeader {
