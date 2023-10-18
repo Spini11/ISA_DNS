@@ -31,12 +31,15 @@ response_struct dnsquery(arguments_struct arguments)
     }
     if(response[0] != query[0] || response[1] != query[1])
         errorHan(1); // ID mismatch
-    response_struct response_struct = responseParse(response, receivedBytes);
-    return response_struct;
+    return responseParse(response, receivedBytes);
 }
 
 response_struct responseParse(std::vector<uint8_t> response, ssize_t receivedBytes)
 {
+    response_struct response_str;
+    response_str.truncated = false;
+    response_str.authoritative = false;
+    response_str.recursive = false;
     if(!((int)response[2] & (1 << 7)))
         errorHan(2); // Not a response
     for(int i = 3; i < 7; i++)
@@ -45,7 +48,17 @@ response_struct responseParse(std::vector<uint8_t> response, ssize_t receivedByt
             errorHan(3); //Invalid opcode
     }
     if((int)response[2] & (1 << 1))
-        errorHan(4); //Truncated
+        {
+            response_str.truncated = true;
+            return response_str;
+        }
+    //if authoritative
+    if((int)response[2] & (1 << 2))
+        response_str.authoritative = true;
+    //if recursive
+    if((int)response[2] & (1 << 0))
+        response_str.recursive = true;
+
     if((int)response[3] & (1 << 6))
         errorHan(5); // Z flag is set to 1
     int rcode = (int)response[3] & 0b00001111;
@@ -62,7 +75,7 @@ response_struct responseParse(std::vector<uint8_t> response, ssize_t receivedByt
     if(rcode >= 6)
         errorHan(11); // Unknown error
 
-    response_struct response_str;
+    
     response_str.answercount = ((int)response[7] & 0b0000000011111111) + ((int)response[6] & 0b1111111100000000);
     response_str.authoritycount = ((int)response[9] & 0b0000000011111111) + ((int)response[8] & 0b1111111100000000);
     response_str.additionalcount = ((int)response[11] & 0b0000000011111111) + ((int)response[10] & 0b1111111100000000);
@@ -135,19 +148,93 @@ response_struct responseParse(std::vector<uint8_t> response, ssize_t receivedByt
         response_str.answer.push_back(answer);
     }
 
-    //print response_str
-    for(int i = 0; i < response_str.answercount; i++)
+    //authority
+    for(int i = 0; i < response_str.authoritycount; i++)
     {
-        std::cout << std::endl;
-        std::cout << "Answer " << i+1 << "/" << response_str.answercount << ":" << std::endl;
-        std::cout << "Name: " << std::dec << response_str.answer[i].name << std::endl;
-        std::cout << "Type: " << std::dec << response_str.answer[i].type << std::endl;
-        std::cout << "Class: " << std::dec << response_str.answer[i].class_ << std::endl;
-        std::cout << "TTL: " << std::dec << response_str.answer[i].ttl << std::endl;
-        std::cout << "Rdata: " << response_str.answer[i].rdata << std::endl;
-        std::cout << std::endl;
-    }
+        authority_struct authority;
+        strncpy(authority.name, domainParser(response, bytePos).c_str(), 255);
+        bytePos++;
+        authority.type = ((int)response[bytePos++] << 7) + (int)response[bytePos++];
+        authority.class_ = ((int)response[bytePos++] << 7) + (int)response[bytePos++];
+        authority.ttl = ((int)response[bytePos++] << 24) + ((int)response[bytePos++] << 16) + ((int)response[bytePos++] << 8) + (int)response[bytePos++];
+        bytePos+=2;
+        strncpy(authority.NameServer, domainParser(response, bytePos).c_str(), 255);
+        bytePos++;
 
+        if(authority.type == 6)
+        {
+            strncpy(authority.Mailbox, domainParser(response, bytePos).c_str(), 255);
+            bytePos++;
+            authority.serial = ((int)response[bytePos++] << 24) + ((int)response[bytePos++] << 16) + ((int)response[bytePos++] << 8) + (int)response[bytePos++];
+            authority.refresh = ((int)response[bytePos++] << 24) + ((int)response[bytePos++] << 16) + ((int)response[bytePos++] << 8) + (int)response[bytePos++];
+            authority.retry = ((int)response[bytePos++] << 24) + ((int)response[bytePos++] << 16) + ((int)response[bytePos++] << 8) + (int)response[bytePos++];
+            authority.expire = ((int)response[bytePos++] << 24) + ((int)response[bytePos++] << 16) + ((int)response[bytePos++] << 8) + (int)response[bytePos++];
+            authority.minimum = ((int)response[bytePos++] << 24) + ((int)response[bytePos++] << 16) + ((int)response[bytePos++] << 8) + (int)response[bytePos++];
+        }
+
+        response_str.authority.push_back(authority);
+    }
+    for(int i = 0; i < response_str.additionalcount; i++)
+    {
+        additional_struct additional;
+        strncpy(additional.name, domainParser(response, bytePos).c_str(), 255);
+        bytePos++;
+        additional.type = ((int)response[bytePos++] << 7) + (int)response[bytePos++];
+        additional.class_ = ((int)response[bytePos++] << 7) + (int)response[bytePos++];
+        additional.ttl = ((int)response[bytePos++] << 24) + ((int)response[bytePos++] << 16) + ((int)response[bytePos++] << 8) + (int)response[bytePos++];
+        //if A type
+        if(additional.type == 1)
+        {
+            bytePos+=2;
+            //NOTE: rewrite?
+            additional.rdata += std::to_string((int)response[bytePos++]).c_str();
+            additional.rdata += '.';
+            additional.rdata += std::to_string((int)response[bytePos++]).c_str();
+            additional.rdata += '.';
+            additional.rdata += std::to_string((int)response[bytePos++]).c_str();
+            additional.rdata += '.';
+            additional.rdata += std::to_string((int)response[bytePos++]).c_str()[0];
+            additional.rdata += '\0';
+        }
+        //cname
+        else if(additional.type == 5 || additional.type == 12)
+        {
+            bytePos+=2;
+            additional.rdata = domainParser(response, bytePos).c_str();
+            bytePos++;
+        }
+        //AAAA
+        else if(additional.type == 28)
+        {
+            bytePos+=2;
+            for(int i = 0; i < 8; i++)
+            {
+                
+                std::stringstream stream;
+                for(int j = 0; j < 2; j++)
+                {
+                    stream.clear();
+                    if((int)response[bytePos] == 0)
+                    {
+                        stream << std::hex << (int)response[bytePos];
+                        stream << std::hex << (int)response[bytePos++];
+                    }
+                    else
+                    {
+                        if((int)response[bytePos] < 16)
+                            stream << std::hex << 0;
+                        stream << std::hex << (int)response[bytePos++];
+                    }
+                }
+                additional.rdata += stream.str();
+                if(i != 7)
+                    additional.rdata += ':';
+            }
+            additional.rdata += '\0';
+        }
+        response_str.additional.push_back(additional);
+    
+    }
     return response_str;
 }
 
@@ -242,7 +329,6 @@ std::vector<uint8_t> sendQueryIP6(std::vector<uint8_t> dnsQuery, char dns[255], 
         exit(1);
     }
     
-
     struct timeval timeout;
     timeout.tv_sec = 2;
     timeout.tv_usec = 0;
@@ -270,13 +356,8 @@ std::vector<uint8_t> createDNSQuery(bool recursive, bool reverse, bool AAAA, cha
     std::vector<uint8_t> dnsQuery;
     struct DNSHeader header;
     header.id = generateID();
-    if(reverse && recursive)
-        header.flags = htons(rdinverse);
-    else if(recursive)
+    if(recursive)
         header.flags = htons(RD);
-    else if(reverse)
-        header.flags = htons(Default);
-        //header.flags = htons(inverse);
     else
         header.flags = htons(Default);
 
@@ -286,6 +367,31 @@ std::vector<uint8_t> createDNSQuery(bool recursive, bool reverse, bool AAAA, cha
     header.arcount = 0;
     dnsQuery.insert(dnsQuery.end(), reinterpret_cast<uint8_t*>(&header), reinterpret_cast<uint8_t*>(&header + 1));
     
+    if(reverse)
+    {
+        std::string domaintmp = domain;
+        if(regex_match(domain, ipv4))
+        {
+            std::string tmp;
+            int len = domaintmp.size();
+            domaintmp = "";
+            for(int i = 0; i < len; i++)
+            {
+                while(domain[i] != '.' && i != len)
+                {
+                    tmp += domain[i];
+                    i++;
+                }
+                domaintmp.insert(0, tmp);
+                if(i != len)
+                    domaintmp.insert(0, ".");
+                tmp = "";
+            }
+            domaintmp += ".in-addr.arpa";
+        }
+        strncpy(domain, domaintmp.c_str(), 255);
+    }
+
     qname(domain, dnsQuery);
 
     dnsQuery.insert(dnsQuery.end(), 0x00);
@@ -297,9 +403,11 @@ std::vector<uint8_t> createDNSQuery(bool recursive, bool reverse, bool AAAA, cha
         dnsQuery.insert(dnsQuery.end(), 0x01);
     dnsQuery.insert(dnsQuery.end(), 0x00);
     dnsQuery.insert(dnsQuery.end(), 0x01);
+    
 
     return dnsQuery;
 }
+
 
 void qname(char domain[255], std::vector<uint8_t> &dnsQuery)
 {

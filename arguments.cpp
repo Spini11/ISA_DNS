@@ -114,5 +114,10 @@ arguments_struct argPars(int argc, char *argv[])
         std::cout << "Error: missing argument" << std::endl;
         exit(1);
     }
+    if(arguments.AAAA && arguments.reverse)
+    {
+        std::cout << "Error: -x and -6 cannot be used together" << std::endl;
+        exit(1);
+    }
     return arguments;
 }

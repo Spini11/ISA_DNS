@@ -12,7 +12,6 @@ typedef struct answer_struct
     int class_;
     int ttl;
     std::string rdata;
-    answer_struct *next;
 } answer_struct;
 
 typedef struct authority_struct
@@ -21,8 +20,13 @@ typedef struct authority_struct
     int type;
     int class_;
     int ttl;
-    char rdata[255];
-    authority_struct *next;
+    char NameServer[255];
+    char Mailbox[255];
+    int serial;
+    int refresh;
+    int retry;
+    int expire;
+    int minimum;
 } authority_struct; 
 
 typedef struct additional_struct
@@ -31,8 +35,7 @@ typedef struct additional_struct
     int type;
     int class_;
     int ttl;
-    char rdata[255];
-    additional_struct *next;
+    std::string rdata;
 } additional_struct;
 
 
