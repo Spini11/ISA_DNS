@@ -1,19 +1,23 @@
 #include "dns.h"
 #include <vector>
 #include <unistd.h>
+#include <time.h>
+#include <fstream> 
 
 
-std::vector<uint8_t> createDNSQuery(bool recursive, bool reverse, bool AAAA, char domain[255]);
+std::vector<uint8_t> createDNSQuery(arguments_struct &arguments);
 uint16_t generateID();
 void qname(char domain[255], std::vector<uint8_t> &dnsQuery);
 std::vector<uint8_t> sendQueryIP4(std::vector<uint8_t> dnsQuery, char dns[255], int dnsport, ssize_t &receivedBytes);
 std::vector<uint8_t> sendQueryIP6(std::vector<uint8_t> dnsQuery, char dns[255], int dnsport, ssize_t &receivedBytes);
 response_struct responseParse(std::vector<uint8_t> response, ssize_t receivedBytes);
 std::string domainParser(std::vector<uint8_t> response, int &bytePos);
+std::string defaultDns();
 
-response_struct dnsquery(arguments_struct arguments)
+response_struct dnsquery(arguments_struct &arguments)
 {
-    std::vector<uint8_t> query = createDNSQuery(arguments.recursive, arguments.reverse, arguments.AAAA, arguments.domain);
+    srand(time(0));
+    std::vector<uint8_t> query = createDNSQuery(arguments);
     ssize_t receivedBytes = 0;
 
     std::vector<uint8_t> response;
@@ -25,9 +29,33 @@ response_struct dnsquery(arguments_struct arguments)
         response = sendQueryIP6(query, arguments.dns, arguments.dnsport, receivedBytes);
     else
     {
-        //TODO
-        std::cout << "domain received, exiting" << std::endl;
-        exit(1);
+        std::cout << defaultDns() << std::endl;
+        arguments_struct tmp;
+        strncpy(tmp.domain, arguments.dns, 255);
+        strncpy(tmp.dns, defaultDns().c_str(), 255);
+        tmp.dnsport = 53;
+        tmp.recursive = true;
+        tmp.reverse = false;
+        tmp.AAAA = false;
+        response_struct responseTmp = dnsquery(tmp);
+        if(responseTmp.answercount == 0)
+        {
+            std::cout << "Failed to resolve dns domain" << std::endl;
+            exit(1);
+        }
+        for(int i = 0; i < responseTmp.answercount; i++)
+        {
+            if(responseTmp.answer[i].type == 1 || responseTmp.answer[i].type == 28)
+            {
+                strncpy(arguments.dns, responseTmp.answer[i].rdata.c_str(), 255);
+                break;
+            }
+        }
+        if(regex_match(arguments.dns, ipv4))
+            response = sendQueryIP4(query, arguments.dns, arguments.dnsport, receivedBytes);
+
+        else if(regex_match(arguments.dns, ipv6))
+            response = sendQueryIP6(query, arguments.dns, arguments.dnsport, receivedBytes);
     }
     if(response[0] != query[0] || response[1] != query[1])
         errorHan(1); // ID mismatch
@@ -66,8 +94,6 @@ response_struct responseParse(std::vector<uint8_t> response, ssize_t receivedByt
         errorHan(6); // Format error
     if(rcode == 2)
         errorHan(7); // Server failure
-    if(rcode == 3 && ((int)response[2] & (1 << 2)))
-        errorHan(8); // Name error
     if(rcode == 4)
         errorHan(9); // Not implemented
     if(rcode == 5)
@@ -95,11 +121,10 @@ response_struct responseParse(std::vector<uint8_t> response, ssize_t receivedByt
         answer.type = ((int)response[bytePos++] << 7) + (int)response[bytePos++];
         answer.class_ = ((int)response[bytePos++] << 7) + (int)response[bytePos++];
         answer.ttl = ((int)response[bytePos++] << 24) + ((int)response[bytePos++] << 16) + ((int)response[bytePos++] << 8) + (int)response[bytePos++];
-        //if A type
+        //A type
         if(answer.type == 1)
         {
             bytePos+=2;
-            //NOTE: rewrite?
             answer.rdata += std::to_string((int)response[bytePos++]).c_str();
             answer.rdata += '.';
             answer.rdata += std::to_string((int)response[bytePos++]).c_str();
@@ -186,7 +211,6 @@ response_struct responseParse(std::vector<uint8_t> response, ssize_t receivedByt
         if(additional.type == 1)
         {
             bytePos+=2;
-            //NOTE: rewrite?
             additional.rdata += std::to_string((int)response[bytePos++]).c_str();
             additional.rdata += '.';
             additional.rdata += std::to_string((int)response[bytePos++]).c_str();
@@ -233,7 +257,6 @@ response_struct responseParse(std::vector<uint8_t> response, ssize_t receivedByt
             additional.rdata += '\0';
         }
         response_str.additional.push_back(additional);
-    
     }
     return response_str;
 }
@@ -350,9 +373,13 @@ std::vector<uint8_t> sendQueryIP6(std::vector<uint8_t> dnsQuery, char dns[255], 
     return response;
 }
 
-std::vector<uint8_t> createDNSQuery(bool recursive, bool reverse, bool AAAA, char domain[255])
+std::vector<uint8_t> createDNSQuery(arguments_struct &arguments)
 {
-    
+    bool recursive = arguments.recursive;
+    bool reverse = arguments.reverse;
+    bool AAAA = arguments.AAAA;
+    char domain[255];
+    strncpy(domain, arguments.domain, 255);
     std::vector<uint8_t> dnsQuery;
     struct DNSHeader header;
     header.id = generateID();
@@ -390,6 +417,7 @@ std::vector<uint8_t> createDNSQuery(bool recursive, bool reverse, bool AAAA, cha
             domaintmp += ".in-addr.arpa";
         }
         strncpy(domain, domaintmp.c_str(), 255);
+        strncpy(arguments.domain, domain, 255);
     }
 
     qname(domain, dnsQuery);
@@ -430,6 +458,32 @@ void qname(char domain[255], std::vector<uint8_t> &dnsQuery)
     dnsQuery.insert(dnsQuery.end(), qname.begin(), qname.end());
     dnsQuery.insert(dnsQuery.end(), 0x00);
     return;
+}
+
+std::string defaultDns()
+{
+    std::string line;
+    std::ifstream resolvFile("/etc/resolv.conf");
+    if (resolvFile.is_open()) 
+    {
+        while (getline(resolvFile, line)) 
+        {
+            if(line[0] == '#')
+                continue;
+            if(line.find("nameserver") != std::string::npos)
+            {
+                std::string dns = line.substr(line.find("nameserver") + 11);
+                resolvFile.close();  
+                return dns;
+            }
+        }
+        resolvFile.close();       
+    }
+    else
+    {
+        std::cerr << "Error opening /etc/resolv.conf" << std::endl;
+        exit(1);
+    }
 }
 
 uint16_t generateID()

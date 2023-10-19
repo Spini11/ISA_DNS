@@ -2,9 +2,9 @@
 
 void printOut(response_struct response, arguments_struct arguments)
 {
-    std::cout << "Authoritative:" << (response.authoritative ? "true" : "false") << ", ";
-    std::cout << " Recursive:" << (response.recursive ? "true" : "false") << ", ";
-    std::cout << " Truncated:" << (response.truncated ? "true" : "false") << ", " << std::endl;
+    std::cout << "Authoritative:" << (response.authoritative ? "Yes" : "No") << ", ";
+    std::cout << " Recursive:" << (response.recursive ? "Yes" : "No") << ", ";
+    std::cout << " Truncated:" << (response.truncated ? "Yes" : "No") << ", " << std::endl;
 
     std::cout << "Question section(1)" << std::endl;
     std::cout << arguments.domain << ", ";
@@ -32,15 +32,14 @@ void printOut(response_struct response, arguments_struct arguments)
         if(response.authority[i].type == 6)
         {
             std::cout << ", " << response.authority[i].Mailbox << ", ";
-        std::cout << response.authority[i].serial << ", ";
-        std::cout << response.authority[i].refresh << ", ";
-        std::cout << response.authority[i].retry << ", ";
-        std::cout << response.authority[i].expire << ", ";
-        std::cout << response.authority[i].minimum << std::endl;
+            std::cout << response.authority[i].serial << ", ";
+            std::cout << response.authority[i].refresh << ", ";
+            std::cout << response.authority[i].retry << ", ";
+            std::cout << response.authority[i].expire << ", ";
+            std::cout << response.authority[i].minimum << std::endl;
         }
         else
-        std::cout << std::endl;
-        
+            std::cout << std::endl;
     }
 
     std::cout << "Additional section(" << response.additionalcount << ")" << std::endl;
@@ -53,4 +52,3 @@ void printOut(response_struct response, arguments_struct arguments)
         std::cout << response.additional[i].rdata << std::endl;
     }
 }
-
