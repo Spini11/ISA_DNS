@@ -12,9 +12,9 @@ std::vector<uint8_t> sendQueryIP4(std::vector<uint8_t> dnsQuery, char dns[255], 
 std::vector<uint8_t> sendQueryIP6(std::vector<uint8_t> dnsQuery, char dns[255], int dnsport, ssize_t &receivedBytes);
 response_struct responseParse(std::vector<uint8_t> response, ssize_t receivedBytes);
 std::string domainParser(std::vector<uint8_t> response, int &bytePos);
-std::string defaultDns();
+std::vector<std::string> defaultDns();
 
-response_struct dnsquery(arguments_struct &arguments)
+response_struct dnsquery(arguments_struct &arguments, int &code)
 {
     srand(time(0));
     std::vector<uint8_t> query = createDNSQuery(arguments);
@@ -29,15 +29,24 @@ response_struct dnsquery(arguments_struct &arguments)
         response = sendQueryIP6(query, arguments.dns, arguments.dnsport, receivedBytes);
     else
     {
-        std::cout << defaultDns() << std::endl;
         arguments_struct tmp;
-        strncpy(tmp.domain, arguments.dns, 255);
-        strncpy(tmp.dns, defaultDns().c_str(), 255);
+        response_struct responseTmp;
         tmp.dnsport = 53;
         tmp.recursive = true;
         tmp.reverse = false;
         tmp.AAAA = false;
-        response_struct responseTmp = dnsquery(tmp);
+        std::vector<std::string> dns = defaultDns();
+        for(int i = 0; i < dns.size(); i++)
+        {
+            strncpy(tmp.domain, arguments.dns, 255);
+            strncpy(tmp.dns, dns[i].c_str(), 255);
+            int code = 0;
+            responseTmp = dnsquery(tmp, code);
+            if(code == 0)
+                break;
+        }
+
+
         if(responseTmp.answercount == 0)
         {
             std::cout << "Failed to resolve dns domain" << std::endl;
@@ -57,6 +66,12 @@ response_struct dnsquery(arguments_struct &arguments)
         else if(regex_match(arguments.dns, ipv6))
             response = sendQueryIP6(query, arguments.dns, arguments.dnsport, receivedBytes);
     }
+    if(receivedBytes == -1)
+    {
+        code = -1;
+        return response_struct();
+    }
+    code = 0;
     if(response[0] != query[0] || response[1] != query[1])
         errorHan(1); // ID mismatch
     return responseParse(response, receivedBytes);
@@ -322,9 +337,8 @@ std::vector<uint8_t> sendQueryIP4(std::vector<uint8_t> dnsQuery, char dns[255], 
     std::vector<uint8_t> response(512);
     receivedBytes = recvfrom(udpSocket, response.data(), response.size(), 0, NULL, NULL);
     if (receivedBytes == -1) {
-        std::cerr << "Error receiving data" << std::endl;
         close(udpSocket);
-        exit(1);
+        return response;
     }
     close(udpSocket);
     return response;
@@ -347,9 +361,8 @@ std::vector<uint8_t> sendQueryIP6(std::vector<uint8_t> dnsQuery, char dns[255], 
 
     ssize_t sentBytes = sendto(udpSocket, dnsQuery.data(), dnsQuery.size(), 0, (struct sockaddr*)&serverAddr6, sizeof(serverAddr6));
     if (sentBytes == -1) {
-        std::cerr << "Error sending data" << std::endl;
         close(udpSocket);
-        exit(1);
+        return;
     }
     
     struct timeval timeout;
@@ -416,6 +429,10 @@ std::vector<uint8_t> createDNSQuery(arguments_struct &arguments)
             }
             domaintmp += ".in-addr.arpa";
         }
+        else if(regex_match(domain, ipv6))
+        {
+            //TODO
+        }
         strncpy(domain, domaintmp.c_str(), 255);
         strncpy(arguments.domain, domain, 255);
     }
@@ -460,10 +477,11 @@ void qname(char domain[255], std::vector<uint8_t> &dnsQuery)
     return;
 }
 
-std::string defaultDns()
+std::vector<std::string> defaultDns()
 {
     std::string line;
     std::ifstream resolvFile("/etc/resolv.conf");
+    std::vector<std::string> dns;
     if (resolvFile.is_open()) 
     {
         while (getline(resolvFile, line)) 
@@ -472,12 +490,11 @@ std::string defaultDns()
                 continue;
             if(line.find("nameserver") != std::string::npos)
             {
-                std::string dns = line.substr(line.find("nameserver") + 11);
-                resolvFile.close();  
-                return dns;
+                dns.push_back(line.substr(line.find("nameserver") + 11));
             }
         }
-        resolvFile.close();       
+        resolvFile.close();
+        return dns;       
     }
     else
     {
