@@ -362,7 +362,7 @@ std::vector<uint8_t> sendQueryIP6(std::vector<uint8_t> dnsQuery, char dns[255], 
     ssize_t sentBytes = sendto(udpSocket, dnsQuery.data(), dnsQuery.size(), 0, (struct sockaddr*)&serverAddr6, sizeof(serverAddr6));
     if (sentBytes == -1) {
         close(udpSocket);
-        return;
+        exit(1);
     }
     
     struct timeval timeout;
@@ -378,9 +378,8 @@ std::vector<uint8_t> sendQueryIP6(std::vector<uint8_t> dnsQuery, char dns[255], 
     std::vector<uint8_t> response(512);
     receivedBytes = recvfrom(udpSocket, response.data(), response.size(), 0, NULL, NULL);
     if (receivedBytes == -1) {
-        std::cerr << "Error receiving data" << std::endl;
         close(udpSocket);
-        exit(1);
+        return response;
     }
     close(udpSocket);
     return response;
@@ -410,11 +409,12 @@ std::vector<uint8_t> createDNSQuery(arguments_struct &arguments)
     if(reverse)
     {
         std::string domaintmp = domain;
+        int len = domaintmp.size();
+        domaintmp = "";
+
         if(regex_match(domain, ipv4))
         {
             std::string tmp;
-            int len = domaintmp.size();
-            domaintmp = "";
             for(int i = 0; i < len; i++)
             {
                 while(domain[i] != '.' && i != len)
@@ -431,7 +431,32 @@ std::vector<uint8_t> createDNSQuery(arguments_struct &arguments)
         }
         else if(regex_match(domain, ipv6))
         {
-            //TODO
+            //reverse ipv6 for reverse dns query
+
+            for(int i = 0; i< len; i++)
+            {
+                int j = 0;
+                while(j%4 != 0 || j == 0)
+                {
+                    domaintmp.insert(0, 1, '.');
+                    if(domain[i] == ':')
+                    {
+                        domaintmp.insert(0, 1, '0');
+                        std::cout << i << std::endl;
+                        std::cout << j << std::endl;
+                    }
+                    else
+                    {
+                        domaintmp.insert(0, 1, domain[i]);
+                        i++;
+                    }
+                    j++;
+                    continue;
+                }
+                
+            }
+            domaintmp+="ip6.arpa";
+            std::cout << domaintmp << std::endl;
         }
         strncpy(domain, domaintmp.c_str(), 255);
         strncpy(arguments.domain, domain, 255);
