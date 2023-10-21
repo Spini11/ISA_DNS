@@ -23,7 +23,7 @@ typedef struct authority_struct
     int ttl;
     char NameServer[255];
     char Mailbox[255];
-    int serial;
+    unsigned int serial;
     int refresh;
     int retry;
     int expire;

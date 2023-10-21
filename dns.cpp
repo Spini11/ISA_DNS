@@ -438,25 +438,33 @@ std::vector<uint8_t> createDNSQuery(arguments_struct &arguments)
                 int j = 0;
                 while(j%4 != 0 || j == 0)
                 {
-                    domaintmp.insert(0, 1, '.');
+                    
                     if(domain[i] == ':')
                     {
-                        domaintmp.insert(0, 1, '0');
-                        std::cout << i << std::endl;
-                        std::cout << j << std::endl;
+                        if(domain[i-1] == ':')
+                        {
+                            for(int k = 0; k < 40-len; k+=5)
+                                domaintmp.insert(0, "0.0.0.0.");
+                            break;
+                        }
+                        else
+                        {
+                            domaintmp.insert(0, 1, '.');
+                            domaintmp.insert(0, 1, '0');
+                        } 
+                        
                     }
                     else
                     {
+                        domaintmp.insert(0, 1, '.');
                         domaintmp.insert(0, 1, domain[i]);
                         i++;
                     }
                     j++;
                     continue;
                 }
-                
             }
             domaintmp+="ip6.arpa";
-            std::cout << domaintmp << std::endl;
         }
         strncpy(domain, domaintmp.c_str(), 255);
         strncpy(arguments.domain, domain, 255);
