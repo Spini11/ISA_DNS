@@ -43,12 +43,12 @@ void printOut(response_struct response, arguments_struct arguments)
     }
 
     std::cout << "Additional section(" << response.additionalcount << ")" << std::endl;
-    for(int i = 0; i < response.additionalcount; i++)
+    for(int i = response.answercount; i < response.additionalcount + response.answercount; i++)
     {
-        std::cout << response.additional[i].name << ", ";
-        std::cout << (response.additional[i].type == 1 ? "A" : response.additional[i].type == 28 ? "AAAA" : response.additional[i].type == 5 ? "CNAME" : "PTR") << ", ";
+        std::cout << response.answer[i].name << ", ";
+        std::cout << (response.answer[i].type == 1 ? "A" : response.answer[i].type == 28 ? "AAAA" : response.answer[i].type == 5 ? "CNAME" : "PTR") << ", ";
         std::cout << "IN, ";
-        std::cout << response.additional[i].ttl << ", ";
-        std::cout << response.additional[i].rdata << std::endl;
+        std::cout << response.answer[i].ttl << ", ";
+        std::cout << response.answer[i].rdata << std::endl;
     }
 }

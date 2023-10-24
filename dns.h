@@ -30,16 +30,6 @@ typedef struct authority_struct
     int minimum;
 } authority_struct; 
 
-typedef struct additional_struct
-{
-    char name[255];
-    int type;
-    int class_;
-    int ttl;
-    std::string rdata;
-} additional_struct;
-
-
 typedef struct response_struct
 {
     bool authoritative;
@@ -53,11 +43,7 @@ typedef struct response_struct
 
     std::vector<answer_struct> answer;
     std::vector<authority_struct> authority;
-    std::vector<additional_struct> additional;
 } response_struct;
-
-
-
 
 struct DNSHeader {
     uint16_t id;
@@ -70,9 +56,7 @@ struct DNSHeader {
 
 enum Flags_ : uint16_t {
     Default = 0x0000,
-    RD = 0x0100,
-    inverse = 0x0800,
-    rdinverse = 0x0900
+    Recursion = 0x0100,
 };
 
     const std::regex ipv4("(([0-9]|[1-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-5])");

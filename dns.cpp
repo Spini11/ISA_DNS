@@ -14,6 +14,7 @@ response_struct responseParse(std::vector<uint8_t> response, ssize_t receivedByt
 std::string domainParser(std::vector<uint8_t> response, int &bytePos);
 std::vector<std::string> defaultDns();
 int bytesToInt(std::vector<uint8_t> bytesVector, int bytes, int &startingByte);
+answer_struct ACNAME(std::vector<uint8_t> response, int &bytePos);
 
 response_struct dnsquery(arguments_struct &arguments, int &code)
 {
@@ -131,61 +132,7 @@ response_struct responseParse(std::vector<uint8_t> response, ssize_t receivedByt
     //answer
     for(int i = 0; i < response_str.answercount; i++)
     {
-        answer_struct answer;
-        strncpy(answer.name, domainParser(response, bytePos).c_str(), 255);
-        bytePos++;
-        answer.type = bytesToInt(response, 2, bytePos);
-        answer.class_ = bytesToInt(response, 2, bytePos);
-        answer.ttl = bytesToInt(response, 4, bytePos);
-        //A type
-        if(answer.type == 1)
-        {
-            bytePos+=2;
-            answer.rdata += std::to_string((int)response[bytePos++]).c_str();
-            answer.rdata += '.';
-            answer.rdata += std::to_string((int)response[bytePos++]).c_str();
-            answer.rdata += '.';
-            answer.rdata += std::to_string((int)response[bytePos++]).c_str();
-            answer.rdata += '.';
-            answer.rdata += std::to_string((int)response[bytePos++]).c_str()[0];
-            answer.rdata += '\0';
-        }
-        //cname
-        else if(answer.type == 5 || answer.type == 12)
-        {
-            bytePos+=2;
-            answer.rdata = domainParser(response, bytePos).c_str();
-            bytePos++;
-        }
-        //AAAA
-        else if(answer.type == 28)
-        {
-            bytePos+=2;
-            for(int i = 0; i < 8; i++)
-            {
-                
-                std::stringstream stream;
-                for(int j = 0; j < 2; j++)
-                {
-                    stream.clear();
-                    if((int)response[bytePos] == 0)
-                    {
-                        stream << std::hex << (int)response[bytePos];
-                        stream << std::hex << (int)response[bytePos++];
-                    }
-                    else
-                    {
-                        if((int)response[bytePos] < 16)
-                            stream << std::hex << 0;
-                        stream << std::hex << (int)response[bytePos++];
-                    }
-                }
-                answer.rdata += stream.str();
-                if(i != 7)
-                    answer.rdata += ':';
-            }
-            answer.rdata += '\0';
-        }
+        answer_struct answer = ACNAME(response, bytePos);
         response_str.answer.push_back(answer);
     }
 
@@ -217,64 +164,70 @@ response_struct responseParse(std::vector<uint8_t> response, ssize_t receivedByt
     }
     for(int i = 0; i < response_str.additionalcount; i++)
     {
-        additional_struct additional;
-        strncpy(additional.name, domainParser(response, bytePos).c_str(), 255);
-        bytePos++;
-        additional.type = bytesToInt(response, 2, bytePos);
-        additional.class_ = bytesToInt(response, 2, bytePos);
-        additional.ttl = bytesToInt(response, 4, bytePos);
-        //if A type
-        if(additional.type == 1)
-        {
-            bytePos+=2;
-            additional.rdata += std::to_string((int)response[bytePos++]).c_str();
-            additional.rdata += '.';
-            additional.rdata += std::to_string((int)response[bytePos++]).c_str();
-            additional.rdata += '.';
-            additional.rdata += std::to_string((int)response[bytePos++]).c_str();
-            additional.rdata += '.';
-            additional.rdata += std::to_string((int)response[bytePos++]).c_str()[0];
-            additional.rdata += '\0';
-        }
-        //cname
-        else if(additional.type == 5 || additional.type == 12)
-        {
-            bytePos+=2;
-            additional.rdata = domainParser(response, bytePos).c_str();
-            bytePos++;
-        }
-        //AAAA
-        else if(additional.type == 28)
-        {
-            bytePos+=2;
-            for(int i = 0; i < 8; i++)
-            {
-                
-                std::stringstream stream;
-                for(int j = 0; j < 2; j++)
-                {
-                    stream.clear();
-                    if((int)response[bytePos] == 0)
-                    {
-                        stream << std::hex << (int)response[bytePos];
-                        stream << std::hex << (int)response[bytePos++];
-                    }
-                    else
-                    {
-                        if((int)response[bytePos] < 16)
-                            stream << std::hex << 0;
-                        stream << std::hex << (int)response[bytePos++];
-                    }
-                }
-                additional.rdata += stream.str();
-                if(i != 7)
-                    additional.rdata += ':';
-            }
-            additional.rdata += '\0';
-        }
-        response_str.additional.push_back(additional);
+        answer_struct answer = ACNAME(response, bytePos);
+        response_str.answer.push_back(answer);
     }
     return response_str;
+}
+
+answer_struct ACNAME(std::vector<uint8_t> response, int &bytePos)
+{
+    answer_struct answer;
+    strncpy(answer.name, domainParser(response, bytePos).c_str(), 255);
+    bytePos++;
+    answer.type = bytesToInt(response, 2, bytePos);
+    answer.class_ = bytesToInt(response, 2, bytePos);
+    answer.ttl = bytesToInt(response, 4, bytePos);
+    //A type
+    if(answer.type == 1)
+    {
+        bytePos+=2;
+        answer.rdata += std::to_string((int)response[bytePos++]).c_str();
+        answer.rdata += '.';
+        answer.rdata += std::to_string((int)response[bytePos++]).c_str();
+        answer.rdata += '.';
+        answer.rdata += std::to_string((int)response[bytePos++]).c_str();
+        answer.rdata += '.';
+        answer.rdata += std::to_string((int)response[bytePos++]).c_str()[0];
+        answer.rdata += '\0';
+    }
+    //cname
+    else if(answer.type == 5 || answer.type == 12)
+    {
+        bytePos+=2;
+        answer.rdata = domainParser(response, bytePos).c_str();
+        bytePos++;
+    }
+    //AAAA
+    else if(answer.type == 28)
+    {
+        bytePos+=2;
+        for(int i = 0; i < 8; i++)
+        {
+            
+            std::stringstream stream;
+            for(int j = 0; j < 2; j++)
+            {
+                stream.clear();
+                if((int)response[bytePos] == 0)
+                {
+                    stream << std::hex << (int)response[bytePos];
+                    stream << std::hex << (int)response[bytePos++];
+                }
+                else
+                {
+                    if((int)response[bytePos] < 16)
+                        stream << std::hex << 0;
+                    stream << std::hex << (int)response[bytePos++];
+                }
+            }
+            answer.rdata += stream.str();
+            if(i != 7)
+                answer.rdata += ':';
+        }
+        answer.rdata += '\0';
+    }
+    return answer;
 }
 
 int bytesToInt(std::vector<uint8_t> bytesVector, int bytes, int &startingByte)
@@ -408,7 +361,7 @@ std::vector<uint8_t> createDNSQuery(arguments_struct &arguments)
     struct DNSHeader header;
     header.id = generateID();
     if(recursive)
-        header.flags = htons(RD);
+        header.flags = htons(Recursion);
     else
         header.flags = htons(Default);
 
