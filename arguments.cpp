@@ -5,6 +5,7 @@ arguments_struct argPars(int argc, char *argv[])
     bool recExists = false;
     bool revExists = false;
     bool AAAAExists = false;
+    bool dnsPortExists = false;
     arguments_struct arguments;
     arguments.recursive = false;
     arguments.reverse = false;
@@ -91,6 +92,7 @@ arguments_struct argPars(int argc, char *argv[])
                 std::cout << "Error: -p argument is not a number" << std::endl;
                 exit(1);
             }
+            dnsPortExists = true;
         }
         else if(argv[i][0] == '-')
         {
@@ -107,7 +109,7 @@ arguments_struct argPars(int argc, char *argv[])
             strncpy(arguments.domain, argv[i], 255);
         } 
     }
-    if (arguments.dnsport == NULL)
+    if (!dnsPortExists)
         arguments.dnsport = 53;
     if (arguments.dns[0] == '\0' || arguments.domain[0] == '\0')
     {

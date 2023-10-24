@@ -13,6 +13,7 @@ std::vector<uint8_t> sendQueryIP6(std::vector<uint8_t> dnsQuery, char dns[255], 
 response_struct responseParse(std::vector<uint8_t> response, ssize_t receivedBytes);
 std::string domainParser(std::vector<uint8_t> response, int &bytePos);
 std::vector<std::string> defaultDns();
+int bytesToInt(std::vector<uint8_t> bytesVector, int bytes, int &startingByte);
 
 response_struct dnsquery(arguments_struct &arguments, int &code)
 {
@@ -36,7 +37,7 @@ response_struct dnsquery(arguments_struct &arguments, int &code)
         tmp.reverse = false;
         tmp.AAAA = false;
         std::vector<std::string> dns = defaultDns();
-        for(int i = 0; i < dns.size(); i++)
+        for(int i = 0; i < (int)dns.size(); i++)
         {
             strncpy(tmp.domain, arguments.dns, 255);
             strncpy(tmp.dns, dns[i].c_str(), 255);
@@ -133,9 +134,9 @@ response_struct responseParse(std::vector<uint8_t> response, ssize_t receivedByt
         answer_struct answer;
         strncpy(answer.name, domainParser(response, bytePos).c_str(), 255);
         bytePos++;
-        answer.type = ((int)response[bytePos++] << 7) + (int)response[bytePos++];
-        answer.class_ = ((int)response[bytePos++] << 7) + (int)response[bytePos++];
-        answer.ttl = ((int)response[bytePos++] << 24) + ((int)response[bytePos++] << 16) + ((int)response[bytePos++] << 8) + (int)response[bytePos++];
+        answer.type = bytesToInt(response, 2, bytePos);
+        answer.class_ = bytesToInt(response, 2, bytePos);
+        answer.ttl = bytesToInt(response, 4, bytePos);
         //A type
         if(answer.type == 1)
         {
@@ -194,9 +195,9 @@ response_struct responseParse(std::vector<uint8_t> response, ssize_t receivedByt
         authority_struct authority;
         strncpy(authority.name, domainParser(response, bytePos).c_str(), 255);
         bytePos++;
-        authority.type = ((int)response[bytePos++] << 7) + (int)response[bytePos++];
-        authority.class_ = ((int)response[bytePos++] << 7) + (int)response[bytePos++];
-        authority.ttl = ((int)response[bytePos++] << 24) + ((int)response[bytePos++] << 16) + ((int)response[bytePos++] << 8) + (int)response[bytePos++];
+        authority.type = bytesToInt(response, 2, bytePos);
+        authority.class_ = bytesToInt(response, 2, bytePos);
+        authority.ttl = bytesToInt(response, 4, bytePos);
         bytePos+=2;
         strncpy(authority.NameServer, domainParser(response, bytePos).c_str(), 255);
         bytePos++;
@@ -205,11 +206,11 @@ response_struct responseParse(std::vector<uint8_t> response, ssize_t receivedByt
         {
             strncpy(authority.Mailbox, domainParser(response, bytePos).c_str(), 255);
             bytePos++;
-            authority.serial = ((int)response[bytePos++] << 24) + ((int)response[bytePos++] << 16) + ((int)response[bytePos++] << 8) + (int)response[bytePos++];
-            authority.refresh = ((int)response[bytePos++] << 24) + ((int)response[bytePos++] << 16) + ((int)response[bytePos++] << 8) + (int)response[bytePos++];
-            authority.retry = ((int)response[bytePos++] << 24) + ((int)response[bytePos++] << 16) + ((int)response[bytePos++] << 8) + (int)response[bytePos++];
-            authority.expire = ((int)response[bytePos++] << 24) + ((int)response[bytePos++] << 16) + ((int)response[bytePos++] << 8) + (int)response[bytePos++];
-            authority.minimum = ((int)response[bytePos++] << 24) + ((int)response[bytePos++] << 16) + ((int)response[bytePos++] << 8) + (int)response[bytePos++];
+            authority.serial = bytesToInt(response, 4, bytePos);
+            authority.refresh = bytesToInt(response, 4, bytePos);
+            authority.retry = bytesToInt(response, 4, bytePos);
+            authority.expire = bytesToInt(response, 4, bytePos);
+            authority.minimum = bytesToInt(response, 4, bytePos);
         }
 
         response_str.authority.push_back(authority);
@@ -219,9 +220,9 @@ response_struct responseParse(std::vector<uint8_t> response, ssize_t receivedByt
         additional_struct additional;
         strncpy(additional.name, domainParser(response, bytePos).c_str(), 255);
         bytePos++;
-        additional.type = ((int)response[bytePos++] << 7) + (int)response[bytePos++];
-        additional.class_ = ((int)response[bytePos++] << 7) + (int)response[bytePos++];
-        additional.ttl = ((int)response[bytePos++] << 24) + ((int)response[bytePos++] << 16) + ((int)response[bytePos++] << 8) + (int)response[bytePos++];
+        additional.type = bytesToInt(response, 2, bytePos);
+        additional.class_ = bytesToInt(response, 2, bytePos);
+        additional.ttl = bytesToInt(response, 4, bytePos);
         //if A type
         if(additional.type == 1)
         {
@@ -274,6 +275,17 @@ response_struct responseParse(std::vector<uint8_t> response, ssize_t receivedByt
         response_str.additional.push_back(additional);
     }
     return response_str;
+}
+
+int bytesToInt(std::vector<uint8_t> bytesVector, int bytes, int &startingByte)
+{
+    int result = 0;
+    for(int i = 0; i < bytes; i++)
+    {
+        result += (int)bytesVector[startingByte + i] << (8*(bytes-i-1));
+    }
+    startingByte += bytes;
+    return result;
 }
 
 std::string domainParser(std::vector<uint8_t> response, int &bytePos)
@@ -491,7 +503,7 @@ void qname(char domain[255], std::vector<uint8_t> &dnsQuery)
 {
     int pos = 0;
     std::vector<uint8_t> qname;
-    while(pos < strlen(domain))
+    while(pos < (int)strlen(domain))
     {
         if(domain[pos] == '.')
         {
