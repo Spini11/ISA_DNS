@@ -1,6 +1,6 @@
 #include "arguments.h"
 
-arguments_struct argPars(int argc, char *argv[])
+arguments_struct argPars(int argc, char *argv[], int &errorCode)
 {
     bool recExists = false;
     bool revExists = false;
@@ -14,10 +14,12 @@ arguments_struct argPars(int argc, char *argv[])
     arguments.dnsport = 0;
     arguments.domain[0] = '\0';
 
+    errorCode = 0;
+
     if(argc < 4)
     {
-        std::cout << "Usage: " << argv[0] << " [-r] [-x] [-6] -s dnsserver [-p dnsport] domain" << std::endl;
-        exit(1);
+        errorCode = 101;
+        return arguments;
     }
     for(int i = 1; i < argc; i++)
     {
@@ -25,8 +27,8 @@ arguments_struct argPars(int argc, char *argv[])
         {
             if(recExists)
             {
-                std::cout << "Error: -r already exists" << std::endl;
-                exit(1);
+                errorCode = 102;
+                return arguments;
             }
             recExists = true;
             arguments.recursive = true;
@@ -35,8 +37,8 @@ arguments_struct argPars(int argc, char *argv[])
         {
             if(revExists)
             {
-                std::cout << "Error: -x already exists" << std::endl;
-                exit(1);
+                errorCode = 103;
+                return arguments;
             }
             revExists = true;
             arguments.reverse = true;
@@ -45,8 +47,8 @@ arguments_struct argPars(int argc, char *argv[])
         {
             if(AAAAExists)
             {
-                std::cout << "Error: -6 already exists" << std::endl;
-                exit(1);
+                errorCode = 104;
+                return arguments;
             }
             AAAAExists = true;
             arguments.AAAA = true;
@@ -55,19 +57,13 @@ arguments_struct argPars(int argc, char *argv[])
         {
             if(arguments.dns[0] != '\0')
             {
-                std::cout << arguments.dns << std::endl;
-                std::cout << "Error: -s already exists" << std::endl;
-                exit(1);
+                errorCode = 105;
+                return arguments;
             }
-            else if(i == argc-1)
+            else if(i == argc-1 || argv[++i][0] == '-')
             {
-                std::cout << "Error: argument -p requires a port number" << std::endl;
-                exit(1);
-            }
-            else if(argv[++i][0] == '-')
-            {
-                std::cout << "Error: missing dns address" << std::endl;
-                exit(1);
+                errorCode = 107;
+                return arguments;
             }
             strncpy(arguments.dns, argv[i], 255);
         }
@@ -75,13 +71,13 @@ arguments_struct argPars(int argc, char *argv[])
         {
             if(arguments.dnsport != 0)
             {
-                std::cout << "Error: -p already exists" << std::endl;
-                exit(1);
+                errorCode = 108;
+                return arguments;
             }
             else if(i == argc-1)
             {
-                std::cout << "Error: argument -p requires a port number" << std::endl;
-                exit(1);
+                errorCode = 109;
+                return arguments;
             }
             else if( std::isdigit(*argv[++i]))
             {
@@ -89,22 +85,22 @@ arguments_struct argPars(int argc, char *argv[])
             }
             else
             {
-                std::cout << "Error: -p argument is not a number" << std::endl;
-                exit(1);
+                errorCode = 110;
+                return arguments;
             }
             dnsPortExists = true;
         }
         else if(argv[i][0] == '-')
         {
-            std::cout << "Error: unknown argument" << std::endl;
-            exit(1);
+            errorCode = 111;
+            return arguments;
         }
         else
         {
             if(arguments.domain[0] != '\0')
             {
-                std::cout << "Error: domain already exists" << std::endl;
-                exit(1);
+                errorCode = 112;
+                return arguments;
             }
             strncpy(arguments.domain, argv[i], 255);
         } 
@@ -113,13 +109,13 @@ arguments_struct argPars(int argc, char *argv[])
         arguments.dnsport = 53;
     if (arguments.dns[0] == '\0' || arguments.domain[0] == '\0')
     {
-        std::cout << "Error: missing argument" << std::endl;
-        exit(1);
+        errorCode = 113;
+        return arguments;
     }
     if(arguments.AAAA && arguments.reverse)
     {
-        std::cout << "Error: -x and -6 cannot be used together" << std::endl;
-        exit(1);
+        errorCode = 114;
+        return arguments;
     }
     return arguments;
 }

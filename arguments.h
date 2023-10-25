@@ -10,4 +10,5 @@ typedef struct {
     int dnsport;
 } arguments_struct;
 
-arguments_struct argPars(int argc, char *argv[]);
+arguments_struct argPars(int argc, char *argv[], int &errorCode);
+int RunArgumentParserTests();

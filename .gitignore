@@ -32,3 +32,4 @@ dns
 cmake_install.cmake
 ./CMakeFiles/
 CMakeCache.txt
+dnsTest

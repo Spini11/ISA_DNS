@@ -1,0 +1,131 @@
+#include "ArgParsTest.h"
+
+bool operator==(arguments_struct& exp, arguments_struct& act);
+bool StandardRequestTest();
+bool IPv6RequestTest();
+bool MalformedDnsTest();
+bool MissingDomainTest();
+bool NoArgumentTest();
+
+bool operator==(arguments_struct& exp, arguments_struct& act)
+{
+    return (exp.recursive == act.recursive) && (exp.reverse == act.reverse) && (exp.AAAA == act.AAAA) && (strcmp(exp.domain, act.domain) == 0) && (strcmp(exp.dns, act.dns) == 0) && (exp.dnsport == act.dnsport);
+}
+
+int RunArgumentParserTests()
+{
+    std::cout << "Running ArgumentParser tests" << std::endl;
+    int failedTests = 0;
+    if(!StandardRequestTest())
+    {
+        std::cout << "  StandardRequestTest failed" << std::endl;
+        failedTests++;
+    }
+    else
+        std::cout << "  StandardRequestTest passed" << std::endl;
+    if(!IPv6RequestTest())
+    {
+        std::cout << "  IPv6RequestTest failed" << std::endl;
+        failedTests++;
+    }
+    else
+        std::cout << "  IPv6RequestTest passed" << std::endl;
+    if(!MalformedDnsTest())
+    {
+        std::cout << "  MalformedStandardTest failed" << std::endl;
+        failedTests++;
+    }
+    else
+        std::cout << "  MalformedStandardTest passed" << std::endl;
+    if(!MissingDomainTest())
+    {
+        std::cout << "  MissingDomainTest failed" << std::endl;
+        failedTests++;
+    }
+    else
+        std::cout << "  MissingDomainTest passed" << std::endl;
+    if(!NoArgumentTest())
+    {
+        std::cout << "  NoArgumentTest failed" << std::endl;
+        failedTests++;
+    }
+    else
+        std::cout << "  NoArgumentTest passed" << std::endl;
+    return failedTests;
+}
+
+bool StandardRequestTest()
+{
+    arguments_struct ExpectedArg;
+    strncpy(ExpectedArg.domain, "google.com", 255);
+    strncpy(ExpectedArg.dns, "1.1.1.1", 255);
+    ExpectedArg.recursive = false;
+    ExpectedArg.reverse = false;
+    ExpectedArg.AAAA = false;
+    ExpectedArg.dnsport = 53;
+
+    char* argv[] = {(char*)("dns"), (char*)("-s"), (char*)("1.1.1.1"), (char*)("google.com")};
+    int argc = 4;
+    int errorCode;
+    arguments_struct ActualArg = argPars(argc, argv, errorCode);
+    if(ExpectedArg == ActualArg && errorCode == 0)
+        return true;
+    else
+        return false;
+}
+
+bool IPv6RequestTest()
+{
+    arguments_struct ExpectedArg;
+    strncpy(ExpectedArg.domain, "google.com", 255);
+    strncpy(ExpectedArg.dns, "1.1.1.1", 255);
+    ExpectedArg.recursive = false;
+    ExpectedArg.reverse = false;
+    ExpectedArg.AAAA = true;
+    ExpectedArg.dnsport = 53;
+
+    char* argv[] = {(char*)("dns"), (char*)("-6"), (char*)("google.com"), (char*)("-s"), (char*)("1.1.1.1")};
+    int argc = 5;
+    int errorCode;
+    arguments_struct ActualArg = argPars(argc, argv, errorCode);
+    if(ExpectedArg == ActualArg && errorCode == 0)
+        return true;
+    else
+        return false;
+}
+
+bool MalformedDnsTest()
+{
+    char* argv[] = {(char*)("dns"), (char*)("google.com"), (char*)("-s"), (char*)("-p"), (char*)("10")};
+    int argc = 5;
+    int errorCode;
+    argPars(argc, argv, errorCode);
+    if(errorCode == 107)
+        return true;
+    else
+        return false;
+}
+
+bool MissingDomainTest()
+{
+    char* argv[] = {(char*)("dns"), (char*)("-s"), (char*)("1.1.1.1"), (char*)("-p"), (char*)("10")};
+    int argc = 5;
+    int errorCode;
+    argPars(argc, argv, errorCode);
+    if(errorCode == 113)
+        return true;
+    else
+        return false;
+}
+
+bool NoArgumentTest()
+{
+    char* argv[] = {(char*)("dns")};
+    int argc = 1;
+    int errorCode;
+    argPars(argc, argv, errorCode);
+    if(errorCode == 101)
+        return true;
+    else
+        return false;
+}

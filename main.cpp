@@ -3,7 +3,10 @@
 int main (int argc, char *argv[])
 {
     std::string dnsserver;
-    arguments_struct arg = argPars(argc, argv);
+    int errorCode = 0;
+    arguments_struct arg = argPars(argc, argv, errorCode);
+    if(errorCode != 0)
+        errorHan(errorCode);
     int code = 0;
     response_struct response = dnsquery(arg, code);
     if(code == -1)
