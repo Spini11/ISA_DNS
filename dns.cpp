@@ -319,7 +319,7 @@ std::vector<uint8_t> sendQueryIP6(std::vector<uint8_t> dnsQuery, char dns[255], 
     int udpSocket = socket(AF_INET6, SOCK_DGRAM, 0);
     if (udpSocket == -1) 
     {
-        perror("Error creating socket");
+        std::cerr << "Error creating socket" << std::endl;
         exit(1);
     }
 
@@ -330,6 +330,7 @@ std::vector<uint8_t> sendQueryIP6(std::vector<uint8_t> dnsQuery, char dns[255], 
     ssize_t sentBytes = sendto(udpSocket, dnsQuery.data(), dnsQuery.size(), 0, (struct sockaddr*)&serverAddr6, sizeof(serverAddr6));
     if (sentBytes == -1) {
         close(udpSocket);
+        std::cerr << "Error sending data" << std::endl;
         exit(1);
     }
     

@@ -6,6 +6,7 @@ bool IPv6RequestTest();
 bool MalformedDnsTest();
 bool MissingDomainTest();
 bool NoArgumentTest();
+bool ReverseIPv6Test();
 
 bool operator==(arguments_struct& exp, arguments_struct& act)
 {
@@ -51,6 +52,13 @@ int RunArgumentParserTests()
     }
     else
         std::cout << "  NoArgumentTest passed" << std::endl;
+    if(!ReverseIPv6Test())
+    {
+        std::cout << "  ReverseIPv6Test failed" << std::endl;
+        failedTests++;
+    }
+    else
+        std::cout << "  ReverseIPv6Test passed" << std::endl;
     return failedTests;
 }
 
@@ -125,6 +133,18 @@ bool NoArgumentTest()
     int errorCode;
     argPars(argc, argv, errorCode);
     if(errorCode == 101)
+        return true;
+    else
+        return false;
+}
+
+bool ReverseIPv6Test()
+{
+    char* argv[] = {(char*)("dns"), (char*)("-6"), (char*)("google.com"), (char*)("-s"), (char*)("1.1.1.1"), (char*)("-x")};
+    int argc = 6;
+    int errorCode;
+    argPars(argc, argv, errorCode);
+    if(errorCode == 114)
         return true;
     else
         return false;
