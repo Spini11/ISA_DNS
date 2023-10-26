@@ -22,12 +22,12 @@ typedef struct authority_struct
     int class_;
     int ttl;
     char NameServer[255];
-    char Mailbox[255];
-    unsigned int serial;
-    int refresh;
-    int retry;
-    int expire;
-    int minimum;
+    char Mailbox[255] = {};
+    unsigned int serial = 0;
+    int refresh = 0;
+    int retry = 0;
+    int expire = 0;
+    int minimum = 0;
 } authority_struct; 
 
 typedef struct response_struct
@@ -61,3 +61,5 @@ enum Flags_ : uint16_t {
 
 response_struct dnsquery(arguments_struct &arguments, int &code);
 std::vector<uint8_t> createDNSQuery(arguments_struct &arguments);
+response_struct responseParse(std::vector<uint8_t> response, ssize_t receivedBytes);
+std::string domainParser(std::vector<uint8_t> response, int &bytePos);

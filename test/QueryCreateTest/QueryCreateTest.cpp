@@ -2,7 +2,6 @@
 #include "../../dns.h"
 
 bool TestQueryCreate();
-std::vector<uint8_t> queryConvertor(std::string query);
 bool TestQueryIPv6();
 bool TestReverseIPv6Query();
 

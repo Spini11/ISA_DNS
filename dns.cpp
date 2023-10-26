@@ -10,8 +10,6 @@ uint16_t generateID();
 void qname(char domain[255], std::vector<uint8_t> &dnsQuery);
 std::vector<uint8_t> sendQueryIP4(std::vector<uint8_t> dnsQuery, char dns[255], int dnsport, ssize_t &receivedBytes);
 std::vector<uint8_t> sendQueryIP6(std::vector<uint8_t> dnsQuery, char dns[255], int dnsport, ssize_t &receivedBytes);
-response_struct responseParse(std::vector<uint8_t> response, ssize_t receivedBytes);
-std::string domainParser(std::vector<uint8_t> response, int &bytePos);
 std::vector<std::string> defaultDns();
 int bytesToInt(std::vector<uint8_t> bytesVector, int bytes, int &startingByte);
 answer_struct ACNAME(std::vector<uint8_t> response, int &bytePos);
@@ -121,7 +119,7 @@ response_struct responseParse(std::vector<uint8_t> response, ssize_t receivedByt
     if(rcode >= 6)
         errorHan(11); // Unknown error
 
-    
+    response_str.questioncount = ((int)response[5] & 0b0000000011111111) + ((int)response[4] & 0b1111111100000000);
     response_str.answercount = ((int)response[7] & 0b0000000011111111) + ((int)response[6] & 0b1111111100000000);
     response_str.authoritycount = ((int)response[9] & 0b0000000011111111) + ((int)response[8] & 0b1111111100000000);
     response_str.additionalcount = ((int)response[11] & 0b0000000011111111) + ((int)response[10] & 0b1111111100000000);
@@ -191,8 +189,7 @@ answer_struct ACNAME(std::vector<uint8_t> response, int &bytePos)
         answer.rdata += '.';
         answer.rdata += std::to_string((int)response[bytePos++]).c_str();
         answer.rdata += '.';
-        answer.rdata += std::to_string((int)response[bytePos++]).c_str()[0];
-        answer.rdata += '\0';
+        answer.rdata += std::to_string((int)response[bytePos++]).c_str();
     }
     //cname
     else if(answer.type == 5 || answer.type == 12)
@@ -228,7 +225,6 @@ answer_struct ACNAME(std::vector<uint8_t> response, int &bytePos)
             if(i != 7)
                 answer.rdata += ':';
         }
-        answer.rdata += '\0';
     }
     return answer;
 }
