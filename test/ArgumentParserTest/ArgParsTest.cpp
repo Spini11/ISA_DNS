@@ -1,4 +1,5 @@
 #include "ArgParsTest.h"
+#include "../../arguments.h"
 
 bool operator==(arguments_struct& exp, arguments_struct& act);
 bool StandardRequestTest();

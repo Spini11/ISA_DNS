@@ -77,21 +77,27 @@ response_struct dnsquery(arguments_struct &arguments, int &code)
     code = 0;
     if(response[0] != query[0] || response[1] != query[1])
         errorHan(1); // ID mismatch
-    return responseParse(response, receivedBytes);
+    return responseParse(response, receivedBytes, code);
 }
 
-response_struct responseParse(std::vector<uint8_t> response, ssize_t receivedBytes)
+response_struct responseParse(std::vector<uint8_t> response, ssize_t receivedBytes, int &errorCode)
 {
     response_struct response_str;
     response_str.truncated = false;
     response_str.authoritative = false;
     response_str.recursive = false;
     if(!((int)response[2] & (1 << 7)))
-        errorHan(2); // Not a response
+        {
+            errorCode = 2;
+            return response_str;
+        } // Not a response
     for(int i = 3; i < 7; i++)
     {
         if(response[2] & (1 << i))
-            errorHan(3); //Invalid opcode
+            {
+                errorCode = 3;
+                return response_str;
+            } //Invalid opcode
     }
     if((int)response[2] & (1 << 1))
         {
@@ -106,18 +112,36 @@ response_struct responseParse(std::vector<uint8_t> response, ssize_t receivedByt
         response_str.recursive = true;
 
     if((int)response[3] & (1 << 6))
-        errorHan(5); // Z flag is set to 1
+        {
+            errorCode = 5;
+            return response_str;
+        } // Z flag is set to 1
     int rcode = (int)response[3] & 0b00001111;
     if(rcode == 1)
-        errorHan(6); // Format error
+        {
+            errorCode = 6;
+            return response_str;
+        } // Format error
     if(rcode == 2)
-        errorHan(7); // Server failure
+        {
+            errorCode = 7;
+            return response_str;
+        } // Server failure
     if(rcode == 4)
-        errorHan(9); // Not implemented
+        {
+            errorCode = 8;
+            return response_str;
+        } // Not implemented
     if(rcode == 5)
-        errorHan(10); // Refused
+        {
+            errorCode = 9;
+            return response_str;
+        } // Refused
     if(rcode >= 6)
-        errorHan(11); // Unknown error
+        {
+            errorCode = 10;
+            return response_str;
+        } // Unknown error
 
     response_str.questioncount = ((int)response[5] & 0b0000000011111111) + ((int)response[4] & 0b1111111100000000);
     response_str.answercount = ((int)response[7] & 0b0000000011111111) + ((int)response[6] & 0b1111111100000000);

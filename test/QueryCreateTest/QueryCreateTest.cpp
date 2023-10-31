@@ -1,29 +1,29 @@
 #include "QueryCreateTest.h"
 #include "../../dns.h"
 
-bool TestQueryCreate();
-bool TestQueryIPv6();
-bool TestReverseIPv6Query();
+bool QueryCreateTest();
+bool QueryIPv6Test();
+bool ReverseIPv6QueryTest();
 
 int RunQueryCreateTests()
 {
     int failedTests = 0;
     std::cout << "Running QueryCreate tests" << std::endl;
-    if(!TestQueryCreate())
+    if(!QueryCreateTest())
     {
-        std::cout << "  TestQueryCreate failed" << std::endl;
+        std::cout << "  QueryCreateTest failed" << std::endl;
         failedTests++;
     }
     else
-        std::cout << "  TestQueryCreate passed" << std::endl;
-    if(!TestQueryIPv6())
+        std::cout << "  QueryCreateTest passed" << std::endl;
+    if(!QueryIPv6Test())
     {
-        std::cout << "  TestQueryIPv6 failed" << std::endl;
+        std::cout << "  QueryIPv6Test failed" << std::endl;
         failedTests++;
     }
     else
-        std::cout << "  TestQueryIPv6 passed" << std::endl;
-    if(!TestReverseIPv6Query())
+        std::cout << "  QueryIPv6Test passed" << std::endl;
+    if(!ReverseIPv6QueryTest())
     {
         std::cout << "  TestReverseQuery failed" << std::endl;
         failedTests++;
@@ -33,7 +33,7 @@ int RunQueryCreateTests()
     return failedTests;
 }
 
-bool TestQueryCreate()
+bool QueryCreateTest()
 {
     arguments_struct arguments;
     strncpy(arguments.domain, "google.com", 255);
@@ -53,7 +53,7 @@ bool TestQueryCreate()
         return false;
 }
 
-bool TestQueryIPv6()
+bool QueryIPv6Test()
 {
     arguments_struct arguments;
     strncpy(arguments.domain, "vutbr.cz", 255);
@@ -73,7 +73,7 @@ bool TestQueryIPv6()
         return false;
 }
 
-bool TestReverseIPv6Query()
+bool ReverseIPv6QueryTest()
 {
     arguments_struct arguments;
     strncpy(arguments.domain, "2a00:1450:4014:080b::200e", 255);
