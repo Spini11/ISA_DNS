@@ -11,7 +11,7 @@ void errorHan(int n)
         std::cerr << "Error: ID mismatch" << std::endl;
         break;
     case 2:
-        std::cerr << "Error: Response is not a response" << std::endl;
+        std::cerr << "Error: Received message is not a response" << std::endl;
         break;
     case 3:
         std::cerr << "Error: Invalid opcode in response" << std::endl;
@@ -78,6 +78,9 @@ void errorHan(int n)
         break;
     case 114:
         std::cerr << "Error: -x and -6 cannot be used together" << std::endl;
+        break;
+    case 201:
+        std::cerr << "Error: Malformed dns response";
         break;
     }
     exit(1);

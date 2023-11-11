@@ -10,7 +10,7 @@ int main()
 
     int ArgumentParserTests = 6;
     int QueryCreateTests = 3;
-    int ReadQueryTests = 5;
+    int ReadQueryTests = 9;
     int CompleteTests = 1;
     
     int totalTests = ArgumentParserTests + QueryCreateTests + ReadQueryTests + CompleteTests;

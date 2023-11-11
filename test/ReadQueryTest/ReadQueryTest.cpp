@@ -9,6 +9,10 @@ bool ReadAuthAdditTest();
 bool ReverseResponseTest();
 bool MalformedResponseTest();
 bool MalformedResponse2Test();
+bool MalformedResponse3Test();
+bool MalformedResponse4Test();
+bool TruncatedResponse();
+bool LongPointer();
 
 bool operator==(response_struct& exp, response_struct& act)
 {
@@ -81,6 +85,34 @@ int RunReadQueryTests()
     }
     else
         std::cout << "  MalformedResponse2Test passed" << std::endl;
+    if(!MalformedResponse3Test())
+    {
+        std::cout << "  MalformedResponse3Test failed" << std::endl;
+        failedTests++;
+    }
+    else
+        std::cout << "  MalformedResponse3Test passed" << std::endl;
+    if(!MalformedResponse4Test())
+    {
+        std::cout << "  MalformedResponse4Test failed" << std::endl;
+        failedTests++;
+    }
+    else
+        std::cout << "  MalformedResponse4Test passed" << std::endl;
+    if(!TruncatedResponse())
+    {
+        std::cout << "  TruncatedResponse failed" << std::endl;
+        failedTests++;
+    }
+    else
+        std::cout << "  TruncatedResponse passed" << std::endl;
+    if(!LongPointer())
+    {
+        std::cout << "  LongPointer failed" << std::endl;
+        failedTests++;
+    }
+    else
+        std::cout << "  LongPointer passed" << std::endl;
     return failedTests;
 }
 
@@ -88,7 +120,7 @@ bool ReadResponseTest()
 {
     std::string Query = "81538180000100010000000006676f6f676c6503636f6d0000010001c00c00010001000000e300048efb256e";
     std::vector<uint8_t> QueryVector = queryConvertor(Query);
-    int ReceivedBytes = 0;
+    int ReceivedBytes = Query.length() / 2;
     int errorCode = 0;
     response_struct actual = responseParse(QueryVector, ReceivedBytes, errorCode);
     response_struct expected;
@@ -117,7 +149,7 @@ bool ReadAuthAdditTest()
 {
     std::string Query = "b301810000010000000200040673657a6e616d02637a0000010001c00c0002000100000e10000603616d73c00cc00c0002000100000e10000603616e73c00cc0270001000100000e1000044d4b4be6c027001c000100000e1000102a020598444400000000000000000004c0390001000100000e1000044d4b4a50c039001c000100000e1000102a020598333300000000000000000003";
     std::vector<uint8_t> QueryVector = queryConvertor(Query);
-    int ReceivedBytes = 0;
+    int ReceivedBytes = Query.length() / 2;
     int errorCode = 0;
     response_struct actual = responseParse(QueryVector, ReceivedBytes, errorCode);
     response_struct expected;
@@ -181,7 +213,7 @@ bool ReverseResponseTest()
 {
     std::string Query = "b73e81800001000100000000013101310131013107696e2d61646472046172706100000c0001c00c000c00010000005a0011036f6e65036f6e65036f6e65036f6e6500";
     std::vector<uint8_t> QueryVector = queryConvertor(Query);
-    int ReceivedBytes = 0;
+    int ReceivedBytes = Query.length() / 2;
     int errorCode = 0;
     response_struct actual = responseParse(QueryVector, ReceivedBytes, errorCode);
     response_struct expected;
@@ -210,7 +242,7 @@ bool MalformedResponseTest()
     // Not a response
     std::string Query = "b73e01800001000100000000013101310131013107696e2d61646472046172706100000c0001c00c000c00010000005a0011036f6e65036f6e65036f6e65036f6e6500";
     std::vector<uint8_t> QueryVector = queryConvertor(Query);
-    int ReceivedBytes = 0;
+    int ReceivedBytes = Query.length() / 2;
     int errorCode = 0;
     response_struct actual = responseParse(QueryVector, ReceivedBytes, errorCode);
     if(errorCode == 2)
@@ -224,7 +256,7 @@ bool MalformedResponse2Test()
     //Z flag set to 1
     std::string Query = "b73e81C00001000100000000013101310131013107696e2d61646472046172706100000c0001c00c000c00010000005a0011036f6e65036f6e65036f6e65036f6e6500";
     std::vector<uint8_t> QueryVector = queryConvertor(Query);
-    int ReceivedBytes = 0;
+    int ReceivedBytes = Query.length() / 2;
     int errorCode = 0;
     response_struct actual = responseParse(QueryVector, ReceivedBytes, errorCode);
     if(errorCode == 5)
@@ -233,3 +265,86 @@ bool MalformedResponse2Test()
         return false;
 }
 
+bool MalformedResponse3Test()
+{
+    //Part of the response is missing
+    std::string Query = "4eff8080000100010000000006676f6f676c6503636f6d0000010001c00c00010001000000ba0004";
+    std::vector<uint8_t> QueryVector = queryConvertor(Query);
+    int ReceivedBytes = Query.length() / 2;
+    int errorCode = 0;
+    response_struct actual = responseParse(QueryVector, ReceivedBytes, errorCode);
+    if(errorCode == 201)
+        return true;
+    else
+        return false;
+}
+
+bool MalformedResponse4Test()
+{
+    //Answer is missing
+    std::string Query = "65a5808000010001000000000132013201320130013901370130013001300130013001300130013001300130013001300130013001610130013001300138013901350130013201300161013203697036046172706100000c0001";
+    std::vector<uint8_t> QueryVector = queryConvertor(Query);
+    int ReceivedBytes = Query.length() / 2;
+    int errorCode = 0;
+    response_struct actual = responseParse(QueryVector, ReceivedBytes, errorCode);
+    if(errorCode == 201)
+        return true;
+    else
+        return false;
+}
+
+bool TruncatedResponse()
+{
+    std::string Query = "35ee86000001000000000000156164666761756968666473646464646464616a6b661164736f6964646464646464666a61696f6415736166617764646f6469666a61696f64736a666f610d61646667756968666473616b660864736f7366616f640f647361666177656f6966736a666f610f6164666761756966647364616a6b660964736f69666a616f641564737361666177656f69666a61696f64736a666f610e61646667616968666473616a6b660964736f666a61696f641364736177656f69666a6461696f64736a666f6110616466676469646166666a6461696f64156473616661666f6966646a61696f64736a64666f610a697361646e73746573740366756e0000010001";
+    std::vector<uint8_t> QueryVector = queryConvertor(Query);
+    int ReceivedBytes = Query.length() / 2;
+    int errorCode = 0;
+    response_struct actual = responseParse(QueryVector, ReceivedBytes, errorCode);
+    response_struct expected;
+    expected.questioncount = 0;
+    expected.answercount = 0;
+    expected.authoritycount = 0;
+    expected.additionalcount = 0;
+    expected.recursive = false;
+    expected.authoritative = false;
+    expected.truncated = true;
+    if(expected == actual && errorCode == 0)
+        return true;
+    else
+        return false;
+}
+
+bool LongPointer()
+{
+    std::string Query = "48a681830001000000010000156164666761756968666473646464646464616a6b661164736f6964646464646464666a61696f6415736166617764646f6469666a61696f64736a666f610d61646667756968666473616b660864736f7366616f640f647361666177656f6966736a666f610f6164666761756966647364616a6b660964736f69666a616f641564737361666177656f69666a61696f64736a666f610e61646667616968666473616a6b660964736f666a61696f641364736177656f69666a6461696f64736a666f6110616466676469646166666a6461696f64156473616661666f6966646a61696f64736a64666f62096973646e73746573740366756e0000010001c0ff0006000100000e0b0035036e73300a63656e7472616c6e6963036e6574000a686f73746d6173746572c1180003d5130000038400000708005c490000000e10";
+    std::vector<uint8_t> QueryVector = queryConvertor(Query);
+    int ReceivedBytes = Query.length() / 2;
+    int errorCode = 0;
+    response_struct actual = responseParse(QueryVector, ReceivedBytes, errorCode);
+    response_struct expected;
+    expected.questioncount = 1;
+    expected.answercount = 0;
+    expected.authoritycount = 1;
+    expected.additionalcount = 0;
+    expected.recursive = true;
+    expected.authoritative = false;
+    expected.truncated = false;
+    authority_struct authority;
+    expected.authority.push_back(authority);
+    strncpy(expected.authority[0].name, "fun", 255);
+    expected.authority[0].type = 6;
+    expected.authority[0].class_ = 1;
+    expected.authority[0].ttl = 3595;
+    strncpy(expected.authority[0].NameServer, "ns0.centralnic.net", 255);
+    strncpy(expected.authority[0].Mailbox, "hostmaster.centralnic.net", 255);
+    expected.authority[0].serial = 251155;
+    expected.authority[0].refresh = 900;
+    expected.authority[0].retry = 1800;
+    expected.authority[0].expire = 6048000;
+    expected.authority[0].minimum = 3600;
+
+    if(expected == actual && errorCode == 0)
+        return true;
+    else
+        return false;
+}

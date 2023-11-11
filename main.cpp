@@ -13,5 +13,7 @@ int main (int argc, char *argv[])
         std::cout << "Error: Failed to receive data from dns " << std::endl;
         exit(1);
     }
+    else if(code != 0)
+        errorHan(code);
     printOut(response, arg);
 }

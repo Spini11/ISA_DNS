@@ -62,4 +62,4 @@ enum Flags_ : uint16_t {
 response_struct dnsquery(arguments_struct &arguments, int &code);
 std::vector<uint8_t> createDNSQuery(arguments_struct &arguments);
 response_struct responseParse(std::vector<uint8_t> response, ssize_t receivedBytes, int &errorcode);
-std::string domainParser(std::vector<uint8_t> response, int &bytePos);
+std::string domainParser(std::vector<uint8_t> response, int &bytePos, int &errorCode, int receivedBytes);
