@@ -44,6 +44,7 @@ response_struct dnsquery(arguments_struct &arguments, int &code)
             std::cout << "Failed to resolve dns server address" << std::endl;
             exit(1);
         }
+        //Find first A or AAAA record
         for (int i = 0; i < responseTmp.answercount; i++)
         {
             if (responseTmp.answer[i].type == 1 || responseTmp.answer[i].type == 28)
@@ -120,7 +121,7 @@ response_struct responseParse(std::vector<uint8_t> response, ssize_t receivedByt
         return response_str;
     } 
     int rcode = (int)response[3] & 0b00001111;
-    //Check if server returned Format error\
+    //Check if server returned Format error
     if (rcode == 1)
     {
         errorCode = 6;
@@ -156,13 +157,13 @@ response_struct responseParse(std::vector<uint8_t> response, ssize_t receivedByt
     response_str.authoritycount = ((int)response[9] & 0b0000000011111111) + ((int)response[8] & 0b1111111100000000);
     response_str.additionalcount = ((int)response[11] & 0b0000000011111111) + ((int)response[10] & 0b1111111100000000);
 
-    // skip query
+    // skip query part
     int bytePos = 12;
     while ((int)response[bytePos] != 0x00)
         bytePos++;
     bytePos += 5;
 
-    // answer
+    //Read answers
     for (int i = 0; i < response_str.answercount; i++)
     {
         answer_struct answer = ACNAME(response, bytePos, receivedBytes, errorCode);
@@ -171,7 +172,7 @@ response_struct responseParse(std::vector<uint8_t> response, ssize_t receivedByt
         response_str.answer.push_back(answer);
     }
 
-    // authority
+    //Read authority
     for (int i = 0; i < response_str.authoritycount; i++)
     {
         authority_struct authority;
@@ -199,6 +200,7 @@ response_struct responseParse(std::vector<uint8_t> response, ssize_t receivedByt
             return response_str;
         bytePos++;
 
+        //SOA record
         if (authority.type == 6)
         {
             strncpy(authority.Mailbox, domainParser(response, bytePos, errorCode, receivedBytes).c_str(), 255);
@@ -224,6 +226,7 @@ response_struct responseParse(std::vector<uint8_t> response, ssize_t receivedByt
 
         response_str.authority.push_back(authority);
     }
+    //Read additional
     for (int i = 0; i < response_str.additionalcount; i++)
     {
         answer_struct answer = ACNAME(response, bytePos, receivedBytes, errorCode);
@@ -239,6 +242,7 @@ response_struct responseParse(std::vector<uint8_t> response, ssize_t receivedByt
     return response_str;
 }
 
+//Reads answer and additional records
 answer_struct ACNAME(std::vector<uint8_t> response, int &bytePos, int receivedBytes, int &errorCode)
 {
     answer_struct answer;
@@ -331,16 +335,17 @@ int bytesToInt(std::vector<uint8_t> bytesVector, int bytes, int &startingByte, i
 std::string domainParser(std::vector<uint8_t> response, int &bytePos, int &errorCode, int receivedBytes)
 {
     std::string domain;
-    while ((int)response[bytePos] != 0x00)
+    while ((int)response[bytePos] != 0x00) //read until null byte
     {
+        //Pointer
         if ((int)response[bytePos] >= 0xc0 && (int)response[bytePos] <= 0xff)
         {
             int errorCode = 0;
-            int offset = bytesToInt(response, 2, bytePos, receivedBytes, errorCode) - 49152;
+            int offset = bytesToInt(response, 2, bytePos, receivedBytes, errorCode) - 49152; //49152 = 11000000 00000000
             bytePos--;
             if (errorCode != 0)
                 return domain;
-            domain += domainParser(response, offset, errorCode, receivedBytes);
+            domain += domainParser(response, offset, errorCode, receivedBytes); //Calls domainParser recursively to continue reading from offset
             if (errorCode != 0)
                 return domain;
             return domain;
@@ -349,12 +354,14 @@ std::string domainParser(std::vector<uint8_t> response, int &bytePos, int &error
         {
             int length = (int)response[bytePos];
             bytePos++;
+            //Reads domain name
             for (int i = 0; i < length; i++)
             {
                 domain += response[bytePos];
                 bytePos++;
             }
-            if ((int)response[bytePos] != 0x00)
+            //Adds dot if not last part of domain
+            if ((int)response[bytePos] != 0x00) 
                 domain += '.';
         }
     }
