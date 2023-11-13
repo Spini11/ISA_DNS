@@ -82,6 +82,9 @@ void errorHan(int n)
     case 201:
         std::cerr << "Error: Malformed dns response";
         break;
+    case -1:
+        std::cerr << "Error: Failed to receive data from dns " << std::endl;
+        break;
     }
     exit(1);
 }

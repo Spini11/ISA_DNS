@@ -1,19 +1,5 @@
 #include "dns.h"
-#include <vector>
-#include <unistd.h>
-#include <time.h>
-#include <fstream>
 
-uint16_t generateID();
-void qname(char domain[255], std::vector<uint8_t> &dnsQuery);
-std::vector<uint8_t> sendQueryIP4(std::vector<uint8_t> dnsQuery, char dns[255], int dnsport, ssize_t &receivedBytes);
-std::vector<uint8_t> sendQueryIP6(std::vector<uint8_t> dnsQuery, char dns[255], int dnsport, ssize_t &receivedBytes);
-std::vector<std::string> defaultDns();
-int bytesToInt(std::vector<uint8_t> bytesVector, int bytes, int &startingByte, int ReceivedBytes, int &errorcode);
-answer_struct ACNAME(std::vector<uint8_t> response, int &bytePos, int receivedBytes, int &errorCode);
-std::string ReverseIPv6(char domain[255], int len);
-std::string ReverseIPv4(char domain[255], int len);
-response_struct InitResponse();
 
 // Source: https://stackoverflow.com/a/36760050
 const std::regex ipv4("^(?:(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])\\.){3}(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])$");
@@ -26,7 +12,6 @@ response_struct dnsquery(arguments_struct &arguments, int &code)
     srand(time(0));
     std::vector<uint8_t> query = createDNSQuery(arguments);
     ssize_t receivedBytes = 0;
-
     std::vector<uint8_t> response;
 
     if (regex_match(arguments.dns, ipv4))
@@ -42,7 +27,9 @@ response_struct dnsquery(arguments_struct &arguments, int &code)
         tmp.recursive = true;
         tmp.reverse = false;
         tmp.AAAA = false;
+        //Get default dns servers from hosts file
         std::vector<std::string> dns = defaultDns();
+        //Tries to use all default dns servers to resolve dns server address
         for (int i = 0; i < (int)dns.size(); i++)
         {
             strncpy(tmp.domain, arguments.dns, 255);
@@ -52,10 +39,9 @@ response_struct dnsquery(arguments_struct &arguments, int &code)
             if (code == 0)
                 break;
         }
-
         if (responseTmp.answercount == 0)
         {
-            std::cout << "Failed to resolve dns domain" << std::endl;
+            std::cout << "Failed to resolve dns server address" << std::endl;
             exit(1);
         }
         for (int i = 0; i < responseTmp.answercount; i++)
@@ -100,62 +86,70 @@ response_struct responseParse(std::vector<uint8_t> response, ssize_t receivedByt
 {
     response_struct response_str = InitResponse();
 
+    //Check if response
     if (!((int)response[2] & (1 << 7)))
     {
         errorCode = 2;
         return response_str;
-    } // Not a response
+    }
+    //Check if valid opcode 
     for (int i = 3; i < 7; i++)
     {
         if (response[2] & (1 << i))
         {
             errorCode = 3;
             return response_str;
-        } // Invalid opcode
+        }
     }
+    //Check if truncated
     if ((int)response[2] & (1 << 1))
     {
         response_str.truncated = true;
         return response_str;
     }
-    // if authoritative
+    //Check if authoritative
     if ((int)response[2] & (1 << 2))
         response_str.authoritative = true;
-    // if recursive
+    //Check if recursive
     if ((int)response[2] & (1 << 0))
         response_str.recursive = true;
-
+    //Check if Z flag is set to 1
     if ((int)response[3] & (1 << 6))
     {
         errorCode = 5;
         return response_str;
-    } // Z flag is set to 1
+    } 
     int rcode = (int)response[3] & 0b00001111;
+    //Check if server returned Format error\
     if (rcode == 1)
     {
         errorCode = 6;
         return response_str;
-    } // Format error
+    }
+    //Check if server returned Server failure
     if (rcode == 2)
     {
         errorCode = 7;
         return response_str;
-    } // Server failure
+    }
+    //Check if server returned Not implemented
     if (rcode == 4)
     {
         errorCode = 8;
         return response_str;
-    } // Not implemented
+    }
+    //Check if server returned Refused
     if (rcode == 5)
     {
         errorCode = 9;
         return response_str;
-    } // Refused
+    }
+    //Check if server returned Unknown error
     if (rcode >= 6)
     {
         errorCode = 10;
         return response_str;
-    } // Unknown error
+    }
 
     response_str.questioncount = ((int)response[5] & 0b0000000011111111) + ((int)response[4] & 0b1111111100000000);
     response_str.answercount = ((int)response[7] & 0b0000000011111111) + ((int)response[6] & 0b1111111100000000);
@@ -369,17 +363,19 @@ std::string domainParser(std::vector<uint8_t> response, int &bytePos, int &error
 
 std::vector<uint8_t> sendQueryIP4(std::vector<uint8_t> dnsQuery, char dns[255], int dnsport, ssize_t &receivedBytes)
 {
+    //create socket
     struct sockaddr_in serverAddr;
-    serverAddr.sin_family = AF_INET;
-    serverAddr.sin_port = htons(dnsport);
-    serverAddr.sin_addr.s_addr = inet_addr(dns);
-
     int udpSocket = socket(AF_INET, SOCK_DGRAM, 0);
     if (udpSocket == -1)
     {
-        std::cout << "Error creating socket" << std::endl;
+        std::cerr << "Error creating socket" << std::endl;
         exit(1);
     }
+    
+    //set server address
+    serverAddr.sin_family = AF_INET;
+    serverAddr.sin_port = htons(dnsport);
+    serverAddr.sin_addr.s_addr = inet_addr(dns);
 
     ssize_t sentBytes = sendto(udpSocket, dnsQuery.data(), dnsQuery.size(), 0, (struct sockaddr *)&serverAddr, sizeof(serverAddr));
     if (sentBytes == -1)
@@ -388,29 +384,26 @@ std::vector<uint8_t> sendQueryIP4(std::vector<uint8_t> dnsQuery, char dns[255], 
         close(udpSocket);
         exit(1);
     }
+    //set timeout for receiving data
     struct timeval timeout;
     timeout.tv_sec = 2;
     timeout.tv_usec = 0;
 
     if (setsockopt(udpSocket, SOL_SOCKET, SO_RCVTIMEO, (char *)&timeout, sizeof(timeout)) < 0)
     {
-        std::cout << "setsockopt failed\n";
+        std::cerr << "setsockopt failed\n";
         exit(1);
     }
 
-    std::vector<uint8_t> response(512);
+    std::vector<uint8_t> response(513);
     receivedBytes = recvfrom(udpSocket, response.data(), response.size(), 0, NULL, NULL);
-    if (receivedBytes == -1)
-    {
-        close(udpSocket);
-        return response;
-    }
     close(udpSocket);
     return response;
 }
 
 std::vector<uint8_t> sendQueryIP6(std::vector<uint8_t> dnsQuery, char dns[255], int dnsport, ssize_t &receivedBytes)
 {
+    //create socket
     struct sockaddr_in6 serverAddr6;
     memset(&serverAddr6, 0, sizeof(serverAddr6));
     int udpSocket = socket(AF_INET6, SOCK_DGRAM, 0);
@@ -419,7 +412,7 @@ std::vector<uint8_t> sendQueryIP6(std::vector<uint8_t> dnsQuery, char dns[255], 
         std::cerr << "Error creating socket" << std::endl;
         exit(1);
     }
-
+    //set server address
     serverAddr6.sin6_family = AF_INET6;
     serverAddr6.sin6_port = htons(dnsport);
     inet_pton(AF_INET6, dns, &(serverAddr6.sin6_addr));
@@ -432,38 +425,31 @@ std::vector<uint8_t> sendQueryIP6(std::vector<uint8_t> dnsQuery, char dns[255], 
         exit(1);
     }
 
+    //set timeout for receiving data
     struct timeval timeout;
     timeout.tv_sec = 2;
     timeout.tv_usec = 0;
 
     if (setsockopt(udpSocket, SOL_SOCKET, SO_RCVTIMEO, (char *)&timeout, sizeof(timeout)) < 0)
     {
-        std::cout << "setsockopt failed\n";
+        std::cerr << "setsockopt failed\n";
         exit(1);
     }
 
-    std::vector<uint8_t> response(512);
+    std::vector<uint8_t> response(513);
     receivedBytes = recvfrom(udpSocket, response.data(), response.size(), 0, NULL, NULL);
-    if (receivedBytes == -1)
-    {
-        close(udpSocket);
-        return response;
-    }
     close(udpSocket);
     return response;
 }
 
 std::vector<uint8_t> createDNSQuery(arguments_struct &arguments)
 {
-    bool recursive = arguments.recursive;
-    bool reverse = arguments.reverse;
-    bool AAAA = arguments.AAAA;
     char domain[255];
     strncpy(domain, arguments.domain, 255);
     std::vector<uint8_t> dnsQuery;
     struct DNSHeader header;
     header.id = generateID();
-    if (recursive)
+    if (arguments.recursive)
         header.flags = htons(Recursion);
     else
         header.flags = htons(Default);
@@ -472,14 +458,14 @@ std::vector<uint8_t> createDNSQuery(arguments_struct &arguments)
     header.ancount = 0;
     header.nscount = 0;
     header.arcount = 0;
+    //Inserts header into dnsQuery
     dnsQuery.insert(dnsQuery.end(), reinterpret_cast<uint8_t *>(&header), reinterpret_cast<uint8_t *>(&header + 1));
 
-    if (reverse)
+    if (arguments.reverse)
     {
         std::string domaintmp = domain;
         int len = domaintmp.size();
         domaintmp = "";
-
         if (regex_match(domain, ipv4))
         {
             domaintmp = ReverseIPv4(domain, len);
@@ -494,14 +480,14 @@ std::vector<uint8_t> createDNSQuery(arguments_struct &arguments)
 
     qname(domain, dnsQuery);
 
-    dnsQuery.insert(dnsQuery.end(), 0x00);
-    if (AAAA)
+    dnsQuery.insert(dnsQuery.end(), 0x00); //First byte of type
+    if (arguments.AAAA)
         dnsQuery.insert(dnsQuery.end(), 0x1c);
-    else if (reverse)
+    else if (arguments.reverse)
         dnsQuery.insert(dnsQuery.end(), 0x0c);
     else
         dnsQuery.insert(dnsQuery.end(), 0x01);
-    dnsQuery.insert(dnsQuery.end(), 0x00);
+    dnsQuery.insert(dnsQuery.end(), 0x00); //First byte of class
     dnsQuery.insert(dnsQuery.end(), 0x01);
 
     return dnsQuery;
@@ -529,7 +515,6 @@ std::string ReverseIPv4(char domain[255], int len)
 
 std::string ReverseIPv6(char domain[255], int len)
 {
-    // reverse ipv6 for reverse dns query
     std::string domaintmp;
     for (int i = 0; i < len; i++)
     {
@@ -542,11 +527,12 @@ std::string ReverseIPv6(char domain[255], int len)
                 if (domain[i - 1] == ':')
                 {
                     for (int k = 0; k < 40 - len; k += 5)
-                        domaintmp.insert(0, "0.0.0.0.");
+                        domaintmp.insert(0, "0.0.0.0."); //Inserts a block of 4 zeros for every missing block
                     break;
                 }
                 else
                 {
+                    //Inserts missing zeros in a block
                     domaintmp.insert(0, 1, '.');
                     domaintmp.insert(0, 1, '0');
                 }
@@ -567,6 +553,7 @@ std::string ReverseIPv6(char domain[255], int len)
 
 void qname(char domain[255], std::vector<uint8_t> &dnsQuery)
 {
+    //Function to replace dots with length of domain before another dot
     int pos = 0;
     std::vector<uint8_t> qname;
     while (pos < (int)strlen(domain))
@@ -597,11 +584,11 @@ std::vector<std::string> defaultDns()
     {
         while (getline(resolvFile, line))
         {
-            if (line[0] == '#')
+            if (line[0] == '#') //skip comments
                 continue;
             if (line.find("nameserver") != std::string::npos)
             {
-                dns.push_back(line.substr(line.find("nameserver") + 11));
+                dns.push_back(line.substr(line.find("nameserver") + 11)); //copies dns server address
             }
         }
         resolvFile.close();

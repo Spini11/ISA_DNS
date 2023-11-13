@@ -6,14 +6,8 @@ int main (int argc, char *argv[])
     arguments_struct arg = argPars(argc, argv, errorCode);
     if(errorCode != 0)
         errorHan(errorCode);
-    int code = 0;
-    response_struct response = dnsquery(arg, code);
-    if(code == -1)
-    {
-        std::cout << "Error: Failed to receive data from dns " << std::endl;
-        exit(1);
-    }
-    else if(code != 0)
-        errorHan(code);
+    response_struct response = dnsquery(arg, errorCode);
+    if(errorCode != 0)
+        errorHan(errorCode);
     printOut(response, arg);
 }
