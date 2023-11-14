@@ -46,7 +46,7 @@ response_struct dnsquery(arguments_struct &arguments, int &code)
         // Check if response had any answers
         if (responseTmp.answercount == 0)
         {
-            std::cout << "Failed to resolve dns server address" << std::endl;
+            std::cerr << "Failed to resolve dns server address" << std::endl;
             exit(1);
         }
         // Find first A or AAAA record
