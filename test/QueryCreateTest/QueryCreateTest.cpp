@@ -1,9 +1,4 @@
 #include "QueryCreateTest.h"
-#include "../../dns.h"
-
-bool QueryCreateTest();
-bool QueryIPv6Test();
-bool ReverseIPv6QueryTest();
 
 int RunQueryCreateTests()
 {

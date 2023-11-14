@@ -1,3 +1,4 @@
+#pragma once
 #include "arguments.h"
 #include "errorHandling.h"
 #include <sys/socket.h>

@@ -1,8 +1,5 @@
 #include "errorHandling.h"
 
-#include <iostream>
-#include <cstdlib>
-
 void errorHan(int n)
 {
     switch (n)
@@ -78,6 +75,9 @@ void errorHan(int n)
         break;
     case 114:
         std::cerr << "Error: -x and -6 cannot be used together" << std::endl;
+        break;
+    case 115:
+        std::cerr << "Domain name is too long" << std::endl;
         break;
     case 201:
         std::cerr << "Error: Malformed dns response";

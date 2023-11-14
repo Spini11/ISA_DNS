@@ -1,11 +1,4 @@
 #include "CompleteTest.h"
-#include "ReadQueryTest/ReadQueryTest.h"
-
-bool CompleteTest();
-bool CompleteCnameTest();
-
-
-
 
 int RunCompleteTests()
 {
