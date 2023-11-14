@@ -1,32 +1,36 @@
 #include "ReadQueryTest.h"
 
-bool operator==(response_struct& exp, response_struct& act)
+// Operator overloading for comparing response structs
+bool operator==(response_struct &exp, response_struct &act)
 {
-    return ((exp.authoritative == act.authoritative) && (exp.recursive == act.recursive) 
-    && (exp.truncated == act.truncated) && (exp.questioncount == act.questioncount) 
-    && (exp.authoritycount == act.authoritycount) && (exp.additionalcount == act.additionalcount)
-    && (exp.answer == act.answer) && (exp.authority == act.authority));
+    return ((exp.authoritative == act.authoritative) && (exp.recursive == act.recursive) && (exp.truncated == act.truncated) && (exp.questioncount == act.questioncount) && (exp.authoritycount == act.authoritycount) && (exp.additionalcount == act.additionalcount) && (exp.answer == act.answer) && (exp.authority == act.authority));
 }
 
-bool operator==(std::vector<answer_struct>& exp, std::vector<answer_struct>& act)
+// Operator overloading for comparing answer structs
+bool operator==(std::vector<answer_struct> &exp, std::vector<answer_struct> &act)
 {
-    if(exp.size() != act.size())
+    // If the size of the vectors is different, they are not equal
+    if (exp.size() != act.size())
         return false;
-    for(int i = 0; i < (int)exp.size(); i++)
+    // If the size is the same, compare each element
+    for (int i = 0; i < (int)exp.size(); i++)
     {
-        if((strcmp(exp[i].name, act[i].name) != 0) || (exp[i].type != act[i].type) || (exp[i].class_ != act[i].class_) || (exp[i].ttl != act[i].ttl) || (exp[i].rdata != act[i].rdata))
+        if ((strcmp(exp[i].name, act[i].name) != 0) || (exp[i].type != act[i].type) || (exp[i].class_ != act[i].class_) || (exp[i].ttl != act[i].ttl) || (exp[i].rdata != act[i].rdata))
             return false;
     }
     return true;
 }
 
-bool operator==(std::vector<authority_struct>& exp, std::vector<authority_struct>& act)
+// Operator overloading for comparing authority structs
+bool operator==(std::vector<authority_struct> &exp, std::vector<authority_struct> &act)
 {
-    if(exp.size() != act.size())
+    // If the size of the vectors is different, they are not equal
+    if (exp.size() != act.size())
         return false;
-    for(int i = 0; i < (int)exp.size(); i++)
+    // If the size is the same, compare each element
+    for (int i = 0; i < (int)exp.size(); i++)
     {
-        if((strcmp(exp[i].name, act[i].name) != 0) || (exp[i].type != act[i].type) || (exp[i].class_ != act[i].class_) || (exp[i].ttl != act[i].ttl) || (strcmp(exp[i].NameServer, act[i].NameServer) != 0) || (strcmp(exp[i].Mailbox, act[i].Mailbox) != 0) || (exp[i].serial != act[i].serial) || (exp[i].refresh != act[i].refresh) || (exp[i].retry != act[i].retry) || (exp[i].expire != act[i].expire) || (exp[i].minimum != act[i].minimum))
+        if ((strcmp(exp[i].name, act[i].name) != 0) || (exp[i].type != act[i].type) || (exp[i].class_ != act[i].class_) || (exp[i].ttl != act[i].ttl) || (strcmp(exp[i].NameServer, act[i].NameServer) != 0) || (strcmp(exp[i].Mailbox, act[i].Mailbox) != 0) || (exp[i].serial != act[i].serial) || (exp[i].refresh != act[i].refresh) || (exp[i].retry != act[i].retry) || (exp[i].expire != act[i].expire) || (exp[i].minimum != act[i].minimum))
             return false;
     }
     return true;
@@ -36,63 +40,63 @@ int RunReadQueryTests()
 {
     std::cout << "Running ReadQuery tests" << std::endl;
     int failedTests = 0;
-    if(!ReadResponseTest())
+    if (!ReadResponseTest())
     {
         std::cout << "  ReadResponseTest failed" << std::endl;
         failedTests++;
     }
     else
         std::cout << "  ReadResponseTest passed" << std::endl;
-    if(!ReadAuthAdditTest())
+    if (!ReadAuthAdditTest())
     {
         std::cout << "  ReadAuthAdditTest failed" << std::endl;
         failedTests++;
     }
     else
         std::cout << "  ReadAuthAdditTest passed" << std::endl;
-    if(!ReverseResponseTest())
+    if (!ReverseResponseTest())
     {
         std::cout << "  ReverseResponseTest failed" << std::endl;
         failedTests++;
     }
     else
         std::cout << "  ReverseResponseTest passed" << std::endl;
-    if(!MalformedResponseTest())
+    if (!MalformedResponseTest())
     {
         std::cout << "  MalformedResponseTest failed" << std::endl;
         failedTests++;
     }
     else
         std::cout << "  MalformedResponseTest passed" << std::endl;
-    if(!MalformedResponse2Test())
+    if (!MalformedResponse2Test())
     {
         std::cout << "  MalformedResponse2Test failed" << std::endl;
         failedTests++;
     }
     else
         std::cout << "  MalformedResponse2Test passed" << std::endl;
-    if(!MalformedResponse3Test())
+    if (!MalformedResponse3Test())
     {
         std::cout << "  MalformedResponse3Test failed" << std::endl;
         failedTests++;
     }
     else
         std::cout << "  MalformedResponse3Test passed" << std::endl;
-    if(!MalformedResponse4Test())
+    if (!MalformedResponse4Test())
     {
         std::cout << "  MalformedResponse4Test failed" << std::endl;
         failedTests++;
     }
     else
         std::cout << "  MalformedResponse4Test passed" << std::endl;
-    if(!TruncatedResponse())
+    if (!TruncatedResponse())
     {
         std::cout << "  TruncatedResponse failed" << std::endl;
         failedTests++;
     }
     else
         std::cout << "  TruncatedResponse passed" << std::endl;
-    if(!LongPointer())
+    if (!LongPointer())
     {
         std::cout << "  LongPointer failed" << std::endl;
         failedTests++;
@@ -104,11 +108,11 @@ int RunReadQueryTests()
 
 bool ReadResponseTest()
 {
+    // Arrange
     std::string Query = "81538180000100010000000006676f6f676c6503636f6d0000010001c00c00010001000000e300048efb256e";
     std::vector<uint8_t> QueryVector = queryConvertor(Query);
     int ReceivedBytes = Query.length() / 2;
     int errorCode = 0;
-    response_struct actual = responseParse(QueryVector, ReceivedBytes, errorCode);
     response_struct expected;
     expected.questioncount = 1;
     expected.answercount = 1;
@@ -117,7 +121,6 @@ bool ReadResponseTest()
     expected.recursive = true;
     expected.authoritative = false;
     expected.truncated = false;
-
     answer_struct answer;
     expected.answer.push_back(answer);
     strncpy(expected.answer[0].name, "google.com", 255);
@@ -125,7 +128,10 @@ bool ReadResponseTest()
     expected.answer[0].class_ = 1;
     expected.answer[0].ttl = 227;
     expected.answer[0].rdata = "142.251.37.110";
-    if(expected == actual && errorCode == 0)
+    // Act
+    response_struct actual = responseParse(QueryVector, ReceivedBytes, errorCode);
+    // Assert
+    if (expected == actual && errorCode == 0)
         return true;
     else
         return false;
@@ -133,11 +139,11 @@ bool ReadResponseTest()
 
 bool ReadAuthAdditTest()
 {
+    // Arrange
     std::string Query = "b301810000010000000200040673657a6e616d02637a0000010001c00c0002000100000e10000603616d73c00cc00c0002000100000e10000603616e73c00cc0270001000100000e1000044d4b4be6c027001c000100000e1000102a020598444400000000000000000004c0390001000100000e1000044d4b4a50c039001c000100000e1000102a020598333300000000000000000003";
     std::vector<uint8_t> QueryVector = queryConvertor(Query);
     int ReceivedBytes = Query.length() / 2;
     int errorCode = 0;
-    response_struct actual = responseParse(QueryVector, ReceivedBytes, errorCode);
     response_struct expected;
     expected.questioncount = 1;
     expected.answercount = 0;
@@ -189,7 +195,10 @@ bool ReadAuthAdditTest()
     expected.answer[3].class_ = 1;
     expected.answer[3].ttl = 3600;
     expected.answer[3].rdata = "2a02:0598:3333:0000:0000:0000:0000:0003";
-    if(expected == actual && errorCode == 0)
+    // Act
+    response_struct actual = responseParse(QueryVector, ReceivedBytes, errorCode);
+    // Assert
+    if (expected == actual && errorCode == 0)
         return true;
     else
         return false;
@@ -197,11 +206,11 @@ bool ReadAuthAdditTest()
 
 bool ReverseResponseTest()
 {
+    //Arrange
     std::string Query = "b73e81800001000100000000013101310131013107696e2d61646472046172706100000c0001c00c000c00010000005a0011036f6e65036f6e65036f6e65036f6e6500";
     std::vector<uint8_t> QueryVector = queryConvertor(Query);
     int ReceivedBytes = Query.length() / 2;
     int errorCode = 0;
-    response_struct actual = responseParse(QueryVector, ReceivedBytes, errorCode);
     response_struct expected;
     expected.questioncount = 1;
     expected.answercount = 1;
@@ -217,7 +226,10 @@ bool ReverseResponseTest()
     expected.answer[0].class_ = 1;
     expected.answer[0].ttl = 90;
     expected.answer[0].rdata = "one.one.one.one";
-    if(expected == actual && errorCode == 0)
+    //Act
+    response_struct actual = responseParse(QueryVector, ReceivedBytes, errorCode);
+    //Assert
+    if (expected == actual && errorCode == 0)
         return true;
     else
         return false;
@@ -226,12 +238,15 @@ bool ReverseResponseTest()
 bool MalformedResponseTest()
 {
     // Not a response
+    //Arrange
     std::string Query = "b73e01800001000100000000013101310131013107696e2d61646472046172706100000c0001c00c000c00010000005a0011036f6e65036f6e65036f6e65036f6e6500";
     std::vector<uint8_t> QueryVector = queryConvertor(Query);
     int ReceivedBytes = Query.length() / 2;
     int errorCode = 0;
+    //Act
     response_struct actual = responseParse(QueryVector, ReceivedBytes, errorCode);
-    if(errorCode == 2)
+    //Assert
+    if (errorCode == 2)
         return true;
     else
         return false;
@@ -239,13 +254,16 @@ bool MalformedResponseTest()
 
 bool MalformedResponse2Test()
 {
-    //Z flag set to 1
+    // Z flag set to 1
+    //Arrange
     std::string Query = "b73e81C00001000100000000013101310131013107696e2d61646472046172706100000c0001c00c000c00010000005a0011036f6e65036f6e65036f6e65036f6e6500";
     std::vector<uint8_t> QueryVector = queryConvertor(Query);
     int ReceivedBytes = Query.length() / 2;
     int errorCode = 0;
+    //Act
     response_struct actual = responseParse(QueryVector, ReceivedBytes, errorCode);
-    if(errorCode == 5)
+    //Assert
+    if (errorCode == 5)
         return true;
     else
         return false;
@@ -253,13 +271,16 @@ bool MalformedResponse2Test()
 
 bool MalformedResponse3Test()
 {
-    //Part of the response is missing
+    // Part of the response is missing
+    //Arrange
     std::string Query = "4eff8080000100010000000006676f6f676c6503636f6d0000010001c00c00010001000000ba0004";
     std::vector<uint8_t> QueryVector = queryConvertor(Query);
     int ReceivedBytes = Query.length() / 2;
     int errorCode = 0;
+    //Act
     response_struct actual = responseParse(QueryVector, ReceivedBytes, errorCode);
-    if(errorCode == 201)
+    //Assert
+    if (errorCode == 201)
         return true;
     else
         return false;
@@ -267,13 +288,16 @@ bool MalformedResponse3Test()
 
 bool MalformedResponse4Test()
 {
-    //Answer is missing
+    // Answer is missing
+    //Arrange
     std::string Query = "65a5808000010001000000000132013201320130013901370130013001300130013001300130013001300130013001300130013001610130013001300138013901350130013201300161013203697036046172706100000c0001";
     std::vector<uint8_t> QueryVector = queryConvertor(Query);
     int ReceivedBytes = Query.length() / 2;
     int errorCode = 0;
+    //Act
     response_struct actual = responseParse(QueryVector, ReceivedBytes, errorCode);
-    if(errorCode == 201)
+    //Assert
+    if (errorCode == 201)
         return true;
     else
         return false;
@@ -281,11 +305,11 @@ bool MalformedResponse4Test()
 
 bool TruncatedResponse()
 {
+    //Arrange
     std::string Query = "35ee86000001000000000000156164666761756968666473646464646464616a6b661164736f6964646464646464666a61696f6415736166617764646f6469666a61696f64736a666f610d61646667756968666473616b660864736f7366616f640f647361666177656f6966736a666f610f6164666761756966647364616a6b660964736f69666a616f641564737361666177656f69666a61696f64736a666f610e61646667616968666473616a6b660964736f666a61696f641364736177656f69666a6461696f64736a666f6110616466676469646166666a6461696f64156473616661666f6966646a61696f64736a64666f610a697361646e73746573740366756e0000010001";
     std::vector<uint8_t> QueryVector = queryConvertor(Query);
     int ReceivedBytes = Query.length() / 2;
     int errorCode = 0;
-    response_struct actual = responseParse(QueryVector, ReceivedBytes, errorCode);
     response_struct expected;
     expected.questioncount = 0;
     expected.answercount = 0;
@@ -294,7 +318,10 @@ bool TruncatedResponse()
     expected.recursive = false;
     expected.authoritative = false;
     expected.truncated = true;
-    if(expected == actual && errorCode == 0)
+    //Act
+    response_struct actual = responseParse(QueryVector, ReceivedBytes, errorCode);
+    //Assert
+    if (expected == actual && errorCode == 0)
         return true;
     else
         return false;
@@ -302,11 +329,11 @@ bool TruncatedResponse()
 
 bool LongPointer()
 {
+    //Arrange
     std::string Query = "48a681830001000000010000156164666761756968666473646464646464616a6b661164736f6964646464646464666a61696f6415736166617764646f6469666a61696f64736a666f610d61646667756968666473616b660864736f7366616f640f647361666177656f6966736a666f610f6164666761756966647364616a6b660964736f69666a616f641564737361666177656f69666a61696f64736a666f610e61646667616968666473616a6b660964736f666a61696f641364736177656f69666a6461696f64736a666f6110616466676469646166666a6461696f64156473616661666f6966646a61696f64736a64666f62096973646e73746573740366756e0000010001c0ff0006000100000e0b0035036e73300a63656e7472616c6e6963036e6574000a686f73746d6173746572c1180003d5130000038400000708005c490000000e10";
     std::vector<uint8_t> QueryVector = queryConvertor(Query);
     int ReceivedBytes = Query.length() / 2;
     int errorCode = 0;
-    response_struct actual = responseParse(QueryVector, ReceivedBytes, errorCode);
     response_struct expected;
     expected.questioncount = 1;
     expected.answercount = 0;
@@ -328,8 +355,10 @@ bool LongPointer()
     expected.authority[0].retry = 1800;
     expected.authority[0].expire = 6048000;
     expected.authority[0].minimum = 3600;
-
-    if(expected == actual && errorCode == 0)
+    //Act
+    response_struct actual = responseParse(QueryVector, ReceivedBytes, errorCode);
+    //Assert
+    if (expected == actual && errorCode == 0)
         return true;
     else
         return false;

@@ -2,6 +2,7 @@
 
 void printOut(response_struct response, arguments_struct arguments)
 {
+    //Print out first line
     std::cout << "Authoritative:" << (response.authoritative ? "Yes" : "No") << ", ";
     std::cout << " Recursive:" << (response.recursive ? "Yes" : "No") << ", ";
     std::cout << " Truncated:" << (response.truncated ? "Yes" : "No") << ", " << std::endl;
@@ -29,6 +30,7 @@ void printOut(response_struct response, arguments_struct arguments)
         std::cout << "IN, ";
         std::cout << response.authority[i].ttl << ", ";
         std::cout << response.authority[i].NameServer;
+        //SOA
         if(response.authority[i].type == 6)
         {
             std::cout << ", " << response.authority[i].Mailbox << ", ";
@@ -36,10 +38,9 @@ void printOut(response_struct response, arguments_struct arguments)
             std::cout << response.authority[i].refresh << ", ";
             std::cout << response.authority[i].retry << ", ";
             std::cout << response.authority[i].expire << ", ";
-            std::cout << response.authority[i].minimum << std::endl;
+            std::cout << response.authority[i].minimum;
         }
-        else
-            std::cout << std::endl;
+        std::cout << std::endl;
     }
 
     std::cout << "Additional section(" << response.additionalcount << ")" << std::endl;

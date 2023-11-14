@@ -347,6 +347,7 @@ answer_struct ACNAME(std::vector<uint8_t> response, int &bytePos, int receivedBy
     else if (answer.type == 5 || answer.type == 12)
     {
         bytePos += 2;
+        // Check if bytePos got out of bounds
         if (bytePos > receivedBytes)
         {
             errorCode = 201;
@@ -357,6 +358,7 @@ answer_struct ACNAME(std::vector<uint8_t> response, int &bytePos, int receivedBy
         if (errorCode != 0)
             return answer;
         bytePos++;
+        // Check if bytePos got out of bounds
         if (bytePos > receivedBytes)
         {
             errorCode = 201;
@@ -367,6 +369,7 @@ answer_struct ACNAME(std::vector<uint8_t> response, int &bytePos, int receivedBy
     else if (answer.type == 28)
     {
         bytePos += 2;
+        // Check if bytePos got out of bounds
         if (bytePos > receivedBytes)
         {
             errorCode = 201;
