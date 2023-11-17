@@ -176,7 +176,7 @@ response_struct responseParse(std::vector<uint8_t> response, ssize_t receivedByt
 
     // Skip query part
     int bytePos = 12;
-    // Skip domain name
+    // Skip domain name in query
     while ((int)response[bytePos] != 0x00)
     {
         bytePos++;
@@ -187,6 +187,7 @@ response_struct responseParse(std::vector<uint8_t> response, ssize_t receivedByt
             return response_str;
         }
     }
+    //skip type and class in query
     bytePos += 5;
     // Check if bytePos is out of bounds
     if (bytePos > receivedBytes)
@@ -827,4 +828,4 @@ std::vector<std::string> defaultDns()
 uint16_t generateID()
 {
     return static_cast<uint16_t>(rand() % 65535);
-}
+}   
