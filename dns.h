@@ -29,10 +29,10 @@ typedef struct authority_struct
     char NameServer[255];
     char Mailbox[255] = {};
     unsigned int serial = 0;
-    int refresh = 0;
-    int retry = 0;
-    int expire = 0;
-    int minimum = 0;
+    unsigned int refresh = 0;
+    unsigned int retry = 0;
+    unsigned int expire = 0;
+    unsigned int minimum = 0;
 } authority_struct; 
 
 typedef struct response_struct

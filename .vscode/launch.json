@@ -9,7 +9,7 @@
             "request": "launch",
             "name": "Launch Program",
             "program": "${fileDirname}/dns",
-            "args": ["-s", "1.1.1.1", "-r", "www.google.com"],
+            "args": ["-help"],
             "stopAtEntry": false,
       "cwd": "${workspaceFolder}",
       "environment": [],
